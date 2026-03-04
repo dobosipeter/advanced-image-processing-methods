@@ -1,2 +1,2 @@
 # advanced-image-processing-methods
-This repository contains my submissions and work of the Advanced Image Processing Methods course.
+This [repository](https://github.com/dobosipeter/advanced-image-processing-methods) contains my homework submissions of the Advanced Image Processing Methods course.
