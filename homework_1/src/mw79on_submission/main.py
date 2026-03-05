@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 def main():
     """ The main method of the module, started when the module is started. """
     test_imports()
-    preprocessing()
+    preprocessed_image: np.ndarray = preprocessing()
 
 def test_imports():
     """ Test that all libraries are available. """
@@ -21,7 +21,13 @@ def test_imports():
     except Exception as e:
         logger.exception("Unable to get version info of all dependencies, are you sure they are all installed? Check the docs. %s", e)
 
-def preprocessing():
+def preprocessing() -> np.ndarray:
+    """
+    Complete subtask 1: load the image, rotate it to make the text horizontal, scale/crop it to remove the black borders.
+
+    Returns:
+        np.ndarray: The preprocessed image.
+    """
     logger.info("Starting preprocessing...")
 
     # Determine image path
@@ -37,23 +43,43 @@ def preprocessing():
 
     show_image(dpl_image, "dpl_image")
 
-    # Correct image rotation
-    rotation_matrix: np.ndarray = cv2.getRotationMatrix2D(
-        center=(dpl_image.shape[1] / 2, dpl_image.shape[0] / 2), # slides state that there is a default value, which is not actually the case...
-        angle=-9.43,
-        scale=1.0
-    )
-    dpl_image_rotated: np.ndarray = cv2.warpAffine(
-        dpl_image,
-        rotation_matrix,
-        (dpl_image.shape[1], dpl_image.shape[0])
-    )
-    show_image(dpl_image_rotated, "dpl_image_rotated")
+    def rotate_crop_to_fit(image: np.ndarray, angle: float) -> np.ndarray:
+        """
+        Rotate the image by the given angle while scaling it to avoid black borders.
 
-    # Remove the black borders from the image using scaling
+        Args:
+            image (np.ndarray): The input image to rotate.
+            angle (float): The angle in degrees to rotate the image. Positive values mean counter-clockwise rotation.
+
+        Returns:
+            np.ndarray: The rotated and scaled image.
+        """
+        # Calculate the scale factor to ensure the rotated image fits within the original dimensions
+        height, width = image.shape[:2]
+        center = (width / 2, height / 2)
+
+        angle_rad = np.radians(angle)
+        sin_a = abs(np.sin(angle_rad))
+        cos_a = abs(np.cos(angle_rad))
+
+        ratio = max(width / height, height / width)
+        scale = cos_a + ratio * sin_a
+        logger.debug("Calculated scale factor: %f", scale)
+
+        rotation_matrix: np.ndarray = cv2.getRotationMatrix2D(center=center, angle=angle, scale=scale) # slides say that default values are available, but that is not the case...
+
+        return cv2.warpAffine(image, rotation_matrix, (width, height))
+
+    dpl_image_rotated: np.ndarray = rotate_crop_to_fit(dpl_image, -9.41) # eye-balled the angle, probably could be calculated more precisely
+    show_image(dpl_image_rotated, "dpl_image_rotated")
+    logger.info("Preprocessing completed.")
+
+    return dpl_image_rotated
+
 
 def show_image(image: np.ndarray, title: str = "Image"):
     """ Utility function to show an image using OpenCV. """
+    logger.info("Showing an image, press any key to continue...")
     cv2.imshow(title, image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
