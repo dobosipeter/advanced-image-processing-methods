@@ -11,7 +11,9 @@ def main():
     """ The main method of the module, started when the module is started. """
     test_imports()
     preprocessed_image: np.ndarray = preprocessing()
-    global_histogram_equalization(preprocessed_image)
+    hist_equalized_image: np.ndarray = global_histogram_equalization(preprocessed_image)
+    clahe_equalized_image: np.ndarray = apply_clahe(preprocessed_image)
+    histograms: list[list[np.ndarray]] = [calculate_histograms(image) for image in [preprocessed_image, hist_equalized_image, clahe_equalized_image]]
 
 def test_imports():
     """ Test that all libraries are available. """
@@ -126,7 +128,7 @@ def apply_clahe(image: np.ndarray) -> np.ndarray:
 
     # Apply CLAHE to the V channel
     hue, saturation, value = cv2.split(hsv_image)
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    clahe = cv2.createCLAHE(clipLimit=1.205, tileGridSize=(9, 9)) # eye-balled the parameters once again, I'm not sure how they could be calculated more precisely
     clahe_value: np.ndarray = clahe.apply(value)
 
     # Merge the channels back
@@ -156,7 +158,7 @@ def plot_results(images: list[np.ndarray], histograms: list[np.ndarray], titles:
 
 def show_image(image: np.ndarray, title: str = "Image"):
     """ Utility function to show an image using OpenCV. """
-    logger.info("Showing an image, press any key to continue...")
+    logger.info("Showing image : %s, press any key to continue...", title)
     cv2.imshow(title, image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
