@@ -1,0 +1,46 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{float}
+
+\title{Advanced Image Processing Methods\\Homework 1 Report}
+\author{Peter Dobosi}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section*{Goal}
+The task was to improve the readability of a skewed, low-quality document photo by applying geometric preprocessing and contrast enhancement methods, then compare the outputs visually and with RGB histograms.
+
+\section*{Method Summary}
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Preprocessing}: Load the input image with OpenCV, rotate by approximately $-9.41^{\circ}$ to align text horizontally, and apply scale during rotation to reduce black border artifacts.
+    \item \textbf{Global Histogram Equalization}: Convert the preprocessed image to HSV, equalize only the V channel, and blend the equalized V with the original V channel (0.5/0.5) to control over-contrast.
+    \item \textbf{CLAHE}: Apply CLAHE on the HSV V channel using \texttt{clipLimit=1.205} and \texttt{tileGridSize=(9,9)}.
+    \item \textbf{Visualization}: Produce one 2x3 figure with images in the top row (rotated/cropped, global EQ, CLAHE) and corresponding RGB histograms in the bottom row.
+\end{enumerate}
+
+\section*{Results}
+The final comparison figure is shown in Figure~\ref{fig:results}. Histograms are plotted per color channel (R, G, B), and the intensity axis is explicitly constrained to 0--255 according to the formal requirements.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{output/task4_results.png}
+    \caption{Homework 1 final 2x3 comparison plot (images and RGB histograms).}
+    \label{fig:results}
+\end{figure}
+
+\section*{Reproducibility}
+From the \texttt{homework\_1/} directory:
+\begin{itemize}[leftmargin=*]
+    \item Install dependencies: \texttt{pip install -e .}
+    \item Run pipeline: \texttt{python src/mw79on\_submission/main.py}
+\end{itemize}
+The script generates \texttt{output/task4\_results.png}. This report is provided as \texttt{REPORT.pdf}.
+
+\end{document}
