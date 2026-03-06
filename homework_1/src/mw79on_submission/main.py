@@ -11,6 +11,7 @@ def main():
     """ The main method of the module, started when the module is started. """
     test_imports()
     preprocessed_image: np.ndarray = preprocessing()
+    global_histogram_equalization(preprocessed_image)
 
 def test_imports():
     """ Test that all libraries are available. """
@@ -76,6 +77,82 @@ def preprocessing() -> np.ndarray:
 
     return dpl_image_rotated
 
+def global_histogram_equalization(image: np.ndarray) -> np.ndarray:
+    """
+    Complete subtask 2:
+        * convert the image to HSV color space
+        * perform global histogram equalization on the V (Value) channel of the preprocessed image
+        * blend the V channel with the original V channel linearly to avoid too high contrast
+        * plot the result on a color picture
+
+    Args:
+        image (np.ndarray): The preprocessed image to perform histogram equalization on.
+    
+    Returns:
+        np.ndarray: The resulting image after histogram equalization and blending.
+    """
+    # Convert the image to HSV color space
+    hsv_image: np.ndarray = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+    # Equalize the histogram of the V channel
+    hue, saturation, value = cv2.split(hsv_image)
+    equalized_value: np.ndarray = cv2.equalizeHist(value)
+
+    # Non blended result
+    non_blended_hsv_image: np.ndarray = cv2.merge((hue, saturation, equalized_value))
+    non_blended_rgb_image: np.ndarray = cv2.cvtColor(non_blended_hsv_image, cv2.COLOR_HSV2BGR)
+    show_image(non_blended_rgb_image, "non_blended_rgb")
+
+    # Blended result
+    blended_value: np.ndarray = cv2.addWeighted(value, 0.5, equalized_value, 0.5, 0)
+    blended_hsv_image: np.ndarray = cv2.merge((hue, saturation, blended_value))
+    blended_rgb_image: np.ndarray = cv2.cvtColor(blended_hsv_image, cv2.COLOR_HSV2BGR)
+    show_image(blended_rgb_image, "blended_rgb")
+
+    return blended_rgb_image
+
+def apply_clahe(image: np.ndarray) -> np.ndarray:
+    """
+    Complete subtask 3: apply CLAHE (Contrast Limited Adaptive Histogram Equalization) to the V channel of the preprocessed image and plot the result.
+
+    Args:
+        image (np.ndarray): The preprocessed image to apply CLAHE on.
+
+    Returns:
+        np.ndarray: The resulting image after applying CLAHE.
+    """
+    # Convert the image to HSV color space
+    hsv_image: np.ndarray = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+    # Apply CLAHE to the V channel
+    hue, saturation, value = cv2.split(hsv_image)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    clahe_value: np.ndarray = clahe.apply(value)
+
+    # Merge the channels back
+    clahe_hsv_image: np.ndarray = cv2.merge((hue, saturation, clahe_value))
+    clahe_rgb_image: np.ndarray = cv2.cvtColor(clahe_hsv_image, cv2.COLOR_HSV2BGR)
+    show_image(clahe_rgb_image, "clahe_rgb")
+
+    return clahe_rgb_image
+
+def calculate_histograms(image: np.ndarray) -> list[np.ndarray]:
+    """
+    Calculate the histograms for the R, G, and B channels of the given image.
+
+    Args:
+        image (np.ndarray): The input image to calculate the histograms for.
+
+    Returns:
+        list[np.ndarray]: A list containing the histograms for the R, G, and B channels.
+    """
+    channels = cv2.split(image)
+    histograms = [cv2.calcHist([channel], [0], None, [256], [0, 256]) for channel in channels]
+    return histograms
+
+def plot_results(images: list[np.ndarray], histograms: list[np.ndarray], titles: list[str]):
+    """
+    """
 
 def show_image(image: np.ndarray, title: str = "Image"):
     """ Utility function to show an image using OpenCV. """
