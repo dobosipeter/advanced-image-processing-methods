@@ -115,25 +115,24 @@ def preprocess_image_for_features(
 
 
 def build_orb_detector(n_features: int = 3000) -> cv2.ORB:
-    """TODO: Create and return an ORB detector/descriptor instance.
+    """Create and return an ORB detector/descriptor instance.
 
     Args:
         n_features: Maximum number of features to retain.
 
     Returns:
         A configured ``cv2.ORB`` instance.
-
-    Raises:
-        NotImplementedError: This function is not yet implemented.
     """
-    raise NotImplementedError("TODO: implement ORB detector construction")
+    detector = cv2.ORB.create(nfeatures=n_features)
+    logger.info("Created ORB detector (nfeatures=%d)", n_features)
+    return detector
 
 
 def compute_keypoints_and_descriptors(
     detector: cv2.ORB,
     image_gray: MatLike,
 ) -> tuple[list[cv2.KeyPoint], MatLike]:
-    """TODO: Compute keypoints and descriptors for a grayscale image.
+    """Compute keypoints and descriptors for a grayscale image.
 
     Args:
         detector: An ORB detector instance (from :func:`build_orb_detector`).
@@ -141,11 +140,14 @@ def compute_keypoints_and_descriptors(
 
     Returns:
         A tuple ``(keypoints, descriptors)``.
-
-    Raises:
-        NotImplementedError: This function is not yet implemented.
     """
-    raise NotImplementedError("TODO: implement keypoint + descriptor extraction")
+    img = np.asarray(image_gray)
+    mask: MatLike = np.full(img.shape[:2], 255, dtype=np.uint8)
+    kp_seq, descriptors = detector.detectAndCompute(img, mask)
+    keypoints: list[cv2.KeyPoint] = list(kp_seq)
+    h, w = img.shape[:2]
+    logger.info("Detected %d keypoints (image %dx%d)", len(keypoints), w, h)
+    return keypoints, descriptors
 
 
 def match_descriptors(
@@ -267,14 +269,38 @@ def run_pipeline() -> None:
         main_image_path=main_image_path,
         roi_dir=roi_dir,
     )
-    _ = preprocess_image_for_features(full_bgr)
 
-    logger.info("Loaded %d ROI image(s); scaffold initialised.", len(roi_images))
-    logger.info("TODO 1: implement detector + descriptor extraction functions")
-    logger.info("TODO 2: implement matching + filtering")
-    logger.info("TODO 3: implement localisation + drawing")
-    logger.info("TODO 4: implement pair-level debug visualisations")
-    logger.info("TODO 5: save final localisation image")
+    # --- Subtask 1: Preprocessing ------------------------------------------------
+    logger.info("Preprocessing scene image…")
+    full_gray = preprocess_image_for_features(full_bgr)
+
+    roi_preprocessed: list[tuple[str, MatLike, MatLike]] = []
+    for name, roi_bgr in roi_images:
+        logger.info("Preprocessing ROI '%s'…", name)
+        roi_gray = preprocess_image_for_features(roi_bgr)
+        roi_preprocessed.append((name, roi_bgr, roi_gray))
+
+    # --- Subtask 2: Keypoints & descriptors --------------------------------------
+    detector = build_orb_detector()
+
+    logger.info("Computing keypoints & descriptors for scene image…")
+    scene_kp, _scene_desc = compute_keypoints_and_descriptors(detector, full_gray)
+
+    roi_features: list[tuple[str, MatLike, list[cv2.KeyPoint], MatLike]] = []
+    for name, roi_bgr, roi_gray in roi_preprocessed:
+        logger.info("Computing keypoints & descriptors for ROI '%s'…", name)
+        kp, desc = compute_keypoints_and_descriptors(detector, roi_gray)
+        roi_features.append((name, roi_bgr, kp, desc))
+
+    logger.info(
+        "Subtasks 1–2 complete: %d ROIs processed, %d scene keypoints.",
+        len(roi_features),
+        len(scene_kp),
+    )
+    logger.info("TODO 3: implement matching + filtering")
+    logger.info("TODO 4: implement localisation + drawing")
+    logger.info("TODO 5: implement pair-level debug visualisations")
+    logger.info("TODO 6: save final localisation image")
 
 
 if __name__ == "__main__":
