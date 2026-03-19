@@ -213,3 +213,6 @@ __marimo__/
 *.fls
 *.fdb_latexmk
 *.synctex.gz
+
+# Course reference slides (read-only materials)
+lab_slides/

@@ -60,6 +60,12 @@ pdflatex -interaction=nonstopmode -halt-on-error REPORT.tex
 - The code is structured into separate functions for loading/preprocessing, enhancements, histogram calculation, and plotting.
 - The final figure contains titles and RGB histograms with intensity axis scaled to `0-255`.
 
+## Notes on Documentation Consistency
+
+- Some course references use terms/examples that can look inconsistent across OpenCV language variants.
+- This implementation is validated against Python OpenCV APIs (`cv2.cvtColor`, `cv2.equalizeHist`, `cv2.createCLAHE`, `cv2.calcHist`) and keeps HSV V-channel processing explicit.
+- For feature-based methods introduced later, see `homework_2/README.md` where descriptor/matcher compatibility is documented.
+
 ## Personal Notes  
   
 - It was a fun bite-sized assignment, I've completed it in a couple hours, with this being my first time using opencv, especially with python.

@@ -1,0 +1,41 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{geometry}
+\usepackage{hyperref}
+\geometry{margin=2.5cm}
+
+\title{Advanced Image Processing Methods\\Homework 2 Report}
+\author{Peter Dobosi}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Problem Statement}
+Given a noisy full-size image and multiple ROI query images, detect and localize each ROI in the full image using preprocessing, local feature extraction, and feature matching.
+
+\section{Method}
+\subsection{Preprocessing}
+All images were converted to grayscale and denoised with Gaussian blur.
+
+\subsection{Feature Extraction}
+ORB keypoints and descriptors were computed for the full image and each ROI.
+
+\subsection{Matching and Localization}
+Descriptor matching was performed with BFMatcher using Hamming distance and Lowe ratio filtering. ROI locations were estimated from matched full-image keypoint coordinates and visualized with rectangles.
+
+\section{Results}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{output/final_localization.png}
+    \caption{Final localization result with ROI rectangles.}
+\end{figure}
+
+\section{Discussion}
+TODO: Discuss parameter settings, success/failure cases, and possible improvements (e.g., homography-based localization, detector comparison, adaptive thresholds).
+
+\end{document}
