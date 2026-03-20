@@ -192,8 +192,11 @@ def estimate_roi_center(
 ) -> tuple[int, int]:
     """Estimate the ROI centre position in the scene from matches.
 
-    The centre is computed as the mean $(x, y)$ of the scene-side keypoint
-    coordinates for every good match.
+    Uses a robust outlier-rejection scheme: the median of the matched scene
+    keypoint coordinates is computed first as an outlier-resistant initial
+    estimate.  Points farther than $2 \times \text{MAD}$ (Median Absolute
+    Deviation) from the median on either axis are discarded, and the final
+    centre is the mean of the remaining inliers.
 
     Args:
         good_matches: Filtered descriptor matches.
@@ -210,9 +213,33 @@ def estimate_roi_center(
     pts = np.array(
         [scene_keypoints[m.trainIdx].pt for m in good_matches], dtype=np.float64,
     )
-    cx, cy = pts.mean(axis=0)
+
+    # Robust outlier rejection using Median Absolute Deviation (MAD).
+    # The median is a robust initial estimate unaffected by outlier false
+    # positives.  Points farther than 2 × MAD from the median on either
+    # axis are discarded before computing the final mean.
+    median = np.median(pts, axis=0)
+    abs_dev = np.abs(pts - median)
+    mad = np.median(abs_dev, axis=0)
+    # Avoid zero MAD (happens when most points coincide) by using a
+    # minimum of 1 pixel.
+    mad = np.maximum(mad, 1.0)
+    inlier_mask = np.all(abs_dev <= 2.0 * mad, axis=1)
+    inliers = pts[inlier_mask]
+
+    if len(inliers) == 0:
+        # Fallback to median if all points are rejected (edge case).
+        logger.warning("All matches rejected as outliers — falling back to median")
+        cx, cy = median
+    else:
+        cx, cy = inliers.mean(axis=0)
+
+    n_rejected = len(pts) - len(inliers) if len(inliers) > 0 else 0
     center = (int(round(cx)), int(round(cy)))
-    logger.info("Estimated ROI centre at (%d, %d) from %d matches", center[0], center[1], len(good_matches))
+    logger.info(
+        "Estimated ROI centre at (%d, %d) from %d matches (%d inliers, %d outliers rejected)",
+        center[0], center[1], len(good_matches), len(inliers), n_rejected,
+    )
     return center
 
 
@@ -284,7 +311,7 @@ def draw_pair_debug_figure(
 
 
 def run_pipeline() -> None:
-    """Execute the Homework 2 pipeline scaffold with explicit TODO checkpoints."""
+    """Execute the full Homework 2 feature-matching pipeline."""
     root = get_project_root()
     main_image_path = root / "data" / "noisy_motherboard.jpg"
     roi_dir = root / "data" / "roi" / "dobosi_peter"

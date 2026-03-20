@@ -1,15 +1,15 @@
 # Homework 2 - ROI Localization with Local Features
 
-This folder contains a scaffold for Homework 2 (noise-aware preprocessing, keypoint descriptors, feature matching, and ROI localization on the full image).
+This folder contains the solution for Homework 2 (noise-aware preprocessing, keypoint descriptors, feature matching, and ROI localization on the full image).
 
 ## Contents
 
 - `data/noisy_motherboard.jpg`: Noisy full-size input image.
 - `data/roi/dobosi_peter/*.jpg`: Dynamic ROI query images for this student.
 - `data/description.pdf`: Official assignment description and formal requirements.
-- `src/mw79on_submission_hw2/main.py`: Pipeline skeleton with TODO checkpoints.
-- `output/final_localization.png`: Target final image with found ROI rectangles (generated after the TODOs are completed).
-- `output/matches/`: Target folder for per-ROI matching visualizations.
+- `src/mw79on_submission_hw2/main.py`: Complete pipeline implementation.
+- `output/final_localization.png`: Final image with ROI bounding rectangles.
+- `output/matches/`: Per-ROI matching visualizations.
 - `RESULTS.md`: Work-in-progress tracker and notes.
 - `REPORT.tex`: Submission report template.
 
@@ -41,13 +41,14 @@ From `homework_2/`, run:
 python src/mw79on_submission_hw2/main.py
 ```
 
-The script currently provides:
+The script executes the full pipeline:
 
-1. **Subtask 1 (Preprocessing)**: Loads the scene and all ROI images, converts each to grayscale, and applies Gaussian blur (5×5) denoising. Optional unsharp-mask sharpening is available via the `sharpen` flag.
-2. **Subtask 2 (Keypoints & Descriptors)**: Creates an ORB detector (`nfeatures=3000`) and computes keypoints + descriptors for the denoised scene and every ROI image.
-3. **Subtask 3–4 (TODO)**: Function stubs for BFMatcher matching, ROI centre estimation, bounding-box drawing, and pair-level debug visualization.
+1. **Subtask 1 (Preprocessing)**: Loads the scene and all ROI images, converts each to grayscale, applies Gaussian blur (5×5) denoising, and sharpens with an unsharp mask (strength 0.30).
+2. **Subtask 2 (Keypoints & Descriptors)**: Creates an ORB detector (`nfeatures=10000`) and computes keypoints + descriptors for the scene and every ROI.
+3. **Subtask 3 (Matching)**: BFMatcher with NORM_HAMMING and Lowe ratio filtering (threshold 0.75) to find good matches per ROI.
+4. **Subtask 4 (Localization & Visualization)**: Estimates ROI centres with MAD-based outlier rejection, draws bounding rectangles on the scene, and saves per-ROI debug figures via `cv2.drawMatches`.
 
-Expected outputs after implementing TODOs:
+Outputs:
 
 - `output/final_localization.png`
 - `output/matches/roi_X_match.png`

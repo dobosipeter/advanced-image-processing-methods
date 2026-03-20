@@ -6,6 +6,7 @@
 \usepackage{hyperref}
 \usepackage{enumitem}
 \usepackage{float}
+\usepackage{amsmath}
 
 \title{Advanced Image Processing Methods\\Homework 2 Report}
 \author{Peter Dobosi}
@@ -36,14 +37,16 @@ The pipeline uses convolutional preprocessing, local feature detection, and desc
         A \texttt{cv2.BFMatcher} with \texttt{NORM\_HAMMING} and \texttt{crossCheck=False} is used with \texttt{knnMatch(k=2)}.
         Weak matches are filtered using the Lowe ratio test (threshold $0.75$).
     \item \textbf{Localization \& Visualization (Subtask~4)}:
-        The centre of each ROI is estimated as the mean $(x,y)$ of the matched scene keypoint coordinates.
+        The centre of each ROI is estimated from the matched scene keypoint coordinates using a robust outlier-rejection scheme based on the Median Absolute Deviation (MAD).
+        The median of the matched coordinates serves as an outlier-resistant initial estimate; points beyond $2\times\text{MAD}$ from the median are discarded, and the final centre is the mean of the remaining inliers.
+        This mitigates the effect of false-positive matches that would otherwise shift the na\"ive mean estimate (see \textit{Observations \& Robustness} below).
         Bounding boxes are drawn with \texttt{cv2.rectangle} using the ROI dimensions, clamped to the scene boundaries.
         Per-ROI debug figures (side-by-side keypoints and match lines via \texttt{cv2.drawMatches}) are saved alongside the final localization image.
 \end{enumerate}
 
 \section*{Parameter Tuning}
 The initial configuration (no sharpening, \texttt{nfeatures=3000}) produced very few good matches for the two smaller ROIs.
-We iteratively refined two parameters and measured good matches after Lowe ratio filtering ($0.75$):
+I iteratively refined two parameters and measured good matches after Lowe ratio filtering ($0.75$):
 
 \begin{center}
 \begin{tabular}{l|c c c c}
@@ -57,14 +60,46 @@ We iteratively refined two parameters and measured good matches after Lowe ratio
 
 Sharpening boosted matches for the larger ROIs by enhancing fine texture, while increasing \texttt{nfeatures} to 10\,000 was essential for the smaller ROIs: the $2962\times1935$ scene image needs a dense keypoint grid so that even small query regions have nearby matches.
 
+\section*{Observations \& Robustness}
+The full scene image is a blue GigaByte motherboard PCB placed upside-down (rotated $180^{\circ}$ clockwise) on an annotated checkerboard mat with taped measurement marks, on a brown table.
+The four ROIs capture mostly unpopulated RAM and PCI-Express slots and their retention clips --- regions that contain several visually similar alternatives across the board.
+
+With the final \texttt{nfeatures=10000} configuration, the two larger ROIs (\texttt{roi\_2} and \texttt{roi\_3}) produce 203 and 184 good matches respectively, yielding highly accurate bounding boxes.
+The two smaller ROIs (\texttt{roi\_0} with 7 matches and \texttt{roi\_1} with 11 matches) are roughly half the pixel area of the other two, which limits the number of detectable keypoints.
+With so few matches, even a single false-positive ``long line'' (a match whose scene-side keypoint lies far from the true ROI location) noticeably shifts a na\"ive mean estimate.
+
+I considered three mitigation strategies:
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Tighter Lowe ratio threshold} --- reducing from $0.75$ to, e.g., $0.60$ would keep only the most distinctive matches.
+        However, with only 7--11 matches to begin with, stricter filtering risks dropping below the minimum needed for any reliable position estimate.
+    \item \textbf{Outlier rejection (MAD-based)} --- computing the median of match coordinates first, then discarding points beyond $2\times$ the Median Absolute Deviation.
+        The median is inherently robust to outliers, and after rejection the mean of the remaining inliers gives an accurate centre without losing ``borderline but valid'' matches.
+    \item \textbf{Proximity-weighted averaging} --- weighting each match's contribution to the centre by the density of nearby matches (e.g., inverse distance to the median).
+        This softly down-weights outliers instead of discarding them, but adds complexity and is sensitive to the choice of kernel bandwidth.
+\end{enumerate}
+I adopted strategy~2 (MAD outlier rejection) as it is simple, parameter-light (only the $2\times$ threshold), and directly removes the false positives visible in the debug figures while preserving all genuine matches.
+
 \section*{Results}
-% Uncomment when final artifacts are generated:
-% \begin{figure}[H]
-%     \centering
-%     \includegraphics[width=\textwidth]{output/final_localization.png}
-%     \caption{Final localization result with ROI bounding rectangles drawn on the full scene image.}
-%     \label{fig:final}
-% \end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{output/final_localization.png}
+    \caption{Final localization result with ROI bounding rectangles drawn on the full scene image.}
+    \label{fig:final}
+\end{figure}
+
+\section*{Conclusion \& Future Work}
+The pipeline successfully localises all four ROIs in the noisy motherboard scene.
+The larger ROIs (\texttt{roi\_2}, \texttt{roi\_3}) produce dense, accurate matches and tightly aligned bounding boxes.
+The smaller ROIs (\texttt{roi\_0}, \texttt{roi\_1}) are more challenging: their content is dominated by homogeneous slot surfaces with little distinctive texture, so the detection algorithms lock onto whatever small differences they can find --- typically corners of nearby silkscreen letters that are close together.
+Because these sparse keypoints cluster around incidental lettering rather than spreading across the full ROI, the resulting centre estimates are biased towards those letter corners.
+
+Two directions could improve accuracy for such homogeneous ROIs in future work:
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Colour-guided refinement} --- after obtaining a rough position estimate from greyscale keypoint matching, the original BGR colour information could be used to refine the location.
+        For example, a normalised cross-correlation or template-matching pass on the colour image within a neighbourhood of the initial estimate would exploit chromatic cues that the greyscale ORB pipeline discards.
+    \item \textbf{Localised brute-force search} --- once the keypoint-based estimate places the ROI approximately, a bounded sliding-window or template match could be run within a limited region (e.g.\ $\pm$\,50\% of the ROI dimensions around the estimate).
+        This trades additional computation for a more precise alignment, and the restricted search area keeps the cost manageable compared to a full-image brute-force scan.
+\end{enumerate}
 
 \section*{Reproducibility}
 From the \texttt{homework\_2/} directory:

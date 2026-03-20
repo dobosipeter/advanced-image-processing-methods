@@ -17,8 +17,10 @@ This [repository](https://github.com/dobosipeter/advanced-image-processing-metho
 - `homework_2/src/mw79on_submission_hw2/main.py`: Main solution script.
 - `homework_2/data/description.pdf`: Official assignment description.
 - `homework_2/README.md`: Run instructions and notes.
-- `homework_2/RESULTS.md`: Method summary and outputs.
-- `homework_2/output/final_localization.png`: Final localization image.
+- `homework_2/REPORT.tex`: LaTeX source for the submission report.
+- `homework_2/REPORT.pdf`: Compiled submission report.
+- `homework_2/output/final_localization.png`: Final localization image with ROI bounding rectangles.
+- `homework_2/output/matches/`: Per-ROI matching debug figures.
 
 ### Other
 
@@ -50,5 +52,5 @@ This keeps dependencies for both assignments in a single reproducible environmen
 Some classroom examples and references mix API variants or detector/matcher combinations across OpenCV ecosystems.
 In this repository, implementations are kept explicit and Python OpenCV compatible:
 
-- Homework 1: histogram-based enhancement with Python OpenCV color conversions and CLAHE.
-- Homework 2: ORB binary descriptors with BFMatcher (Hamming) and Lowe-ratio filtering.
+- Homework 1: histogram-based enhancement with Python OpenCV color conversions.
+- Homework 2: ORB binary descriptors with BFMatcher (Hamming), Lowe-ratio filtering, and MAD-based outlier rejection for robust localization.
