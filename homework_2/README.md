@@ -43,10 +43,9 @@ python src/mw79on_submission_hw2/main.py
 
 The script currently provides:
 
-1. Project/data loading and output path setup.
-2. Preprocessing helper (grayscale + Gaussian denoise).
-3. Function skeletons for detector setup, descriptor extraction, matching, localization, and debug plotting.
-4. Runtime TODO checkpoints logged in execution order.
+1. **Subtask 1 (Preprocessing)**: Loads the scene and all ROI images, converts each to grayscale, and applies Gaussian blur (5×5) denoising. Optional unsharp-mask sharpening is available via the `sharpen` flag.
+2. **Subtask 2 (Keypoints & Descriptors)**: Creates an ORB detector (`nfeatures=3000`) and computes keypoints + descriptors for the denoised scene and every ROI image.
+3. **Subtask 3–4 (TODO)**: Function stubs for BFMatcher matching, ROI centre estimation, bounding-box drawing, and pair-level debug visualization.
 
 Expected outputs after implementing TODOs:
 

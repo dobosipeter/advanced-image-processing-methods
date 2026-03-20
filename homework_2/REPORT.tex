@@ -1,12 +1,11 @@
 \documentclass[11pt,a4paper]{article}
-\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
 \usepackage[T1]{fontenc}
-\usepackage{lmodern}
+\usepackage[utf8]{inputenc}
 \usepackage{graphicx}
-\usepackage{float}
-\usepackage{geometry}
 \usepackage{hyperref}
-\geometry{margin=2.5cm}
+\usepackage{enumitem}
+\usepackage{float}
 
 \title{Advanced Image Processing Methods\\Homework 2 Report}
 \author{Peter Dobosi}
@@ -15,27 +14,49 @@
 \begin{document}
 \maketitle
 
-\section{Problem Statement}
-Given a noisy full-size image and multiple ROI query images, detect and localize each ROI in the full image using preprocessing, local feature extraction, and feature matching.
+\section*{Goal}
+The task is to locate ROI (Region of Interest) query images inside a noisy full-size motherboard photograph.
+The pipeline uses convolutional preprocessing, local feature detection, and descriptor matching to find each ROI's position and mark it with a bounding rectangle.
 
-\section{Method}
-\subsection{Preprocessing}
-All images were converted to grayscale and denoised with Gaussian blur.
+\section*{Method Summary}
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Preprocessing (Subtask~1)}:
+        Both the full scene image and every ROI image are converted to grayscale and denoised with a $5\times5$ Gaussian blur.
+        An optional soft-sharpening pass (unsharp mask via convolution) is available but not enabled by default, as the denoised images already yield sufficient keypoints for reliable matching.
+        ROI loading is dynamic using \texttt{Path.glob}, so the pipeline is independent of the number of ROI files.
+    \item \textbf{Keypoint \& Descriptor Extraction (Subtask~2)}:
+        ORB (\texttt{cv2.ORB\_create}, \texttt{nfeatures=3000}) was chosen over SIFT for the following reasons:
+        \begin{itemize}[leftmargin=1.5em]
+            \item Binary BRIEF-based descriptors are matched with Hamming distance, which is significantly faster than SIFT's 128-float L2 matching on a $2962\times1935$ scene image.
+            \item The ROIs are axis-aligned crops at the same scale as the scene, so SIFT's scale-space advantage is unnecessary.
+            \item ORB is the detector demonstrated in the course lab slides (slide~04) and matches the recommended BFMatcher workflow.
+        \end{itemize}
+        Keypoints and descriptors are computed for the denoised scene image and for each denoised ROI image.
+    \item \textbf{Feature Matching (Subtask~3)}:
+        A \texttt{cv2.BFMatcher} with \texttt{NORM\_HAMMING} and \texttt{crossCheck=False} is used with \texttt{knnMatch(k=2)}.
+        Weak matches are filtered using the Lowe ratio test (threshold $0.75$).
+    \item \textbf{Localization \& Visualization (Subtask~4)}:
+        The centre of each ROI is estimated as the mean $(x,y)$ of the matched scene keypoint coordinates.
+        Bounding boxes are drawn with \texttt{cv2.rectangle} using the ROI dimensions, clamped to the scene boundaries.
+        Per-ROI debug figures (side-by-side keypoints and match lines via \texttt{cv2.drawMatches}) are saved alongside the final localization image.
+\end{enumerate}
 
-\subsection{Feature Extraction}
-ORB keypoints and descriptors were computed for the full image and each ROI.
+\section*{Results}
+% Uncomment when final artifacts are generated:
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=\textwidth]{output/final_localization.png}
+%     \caption{Final localization result with ROI bounding rectangles drawn on the full scene image.}
+%     \label{fig:final}
+% \end{figure}
 
-\subsection{Matching and Localization}
-Descriptor matching was performed with BFMatcher using Hamming distance and Lowe ratio filtering. ROI locations were estimated from matched full-image keypoint coordinates and visualized with rectangles.
-
-\section{Results}
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.95\textwidth]{output/final_localization.png}
-    \caption{Final localization result with ROI rectangles.}
-\end{figure}
-
-\section{Discussion}
-TODO: Discuss parameter settings, success/failure cases, and possible improvements (e.g., homography-based localization, detector comparison, adaptive thresholds).
+\section*{Reproducibility}
+From the \texttt{homework\_2/} directory:
+\begin{itemize}[leftmargin=*]
+    \item Install dependencies: \texttt{pip install -e .}
+    \item Run pipeline: \texttt{python src/mw79on\_submission\_hw2/main.py}
+\end{itemize}
+The script generates \texttt{output/final\_localization.png} and per-ROI match figures in \texttt{output/matches/}.
+This report is provided as \texttt{REPORT.pdf}.
 
 \end{document}

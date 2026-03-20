@@ -155,7 +155,11 @@ def match_descriptors(
     scene_descriptors: MatLike,
     ratio_threshold: float = 0.75,
 ) -> list[cv2.DMatch]:
-    """TODO: Match ROI descriptors against scene descriptors with filtering.
+    """Match ROI descriptors against scene descriptors with Lowe ratio filtering.
+
+    Uses ``cv2.BFMatcher`` with ``NORM_HAMMING`` and ``knnMatch(k=2)``.
+    Only matches where the best distance is below *ratio_threshold* times the
+    second-best distance are retained.
 
     Args:
         roi_descriptors: Descriptor array for the ROI image.
@@ -164,11 +168,22 @@ def match_descriptors(
 
     Returns:
         A filtered list of good ``cv2.DMatch`` objects.
-
-    Raises:
-        NotImplementedError: This function is not yet implemented.
     """
-    raise NotImplementedError("TODO: implement descriptor matching")
+    bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=False)
+    knn_matches = bf.knnMatch(roi_descriptors, scene_descriptors, k=2)
+    good: list[cv2.DMatch] = []
+    for pair in knn_matches:
+        if len(pair) == 2:
+            m, n = pair
+            if m.distance < ratio_threshold * n.distance:
+                good.append(m)
+    logger.info(
+        "Matching: %d raw pairs → %d good (ratio=%.2f)",
+        len(knn_matches),
+        len(good),
+        ratio_threshold,
+    )
+    return good
 
 
 def estimate_roi_center(
@@ -272,19 +287,19 @@ def run_pipeline() -> None:
 
     # --- Subtask 1: Preprocessing ------------------------------------------------
     logger.info("Preprocessing scene image…")
-    full_gray = preprocess_image_for_features(full_bgr)
+    full_gray = preprocess_image_for_features(full_bgr, sharpen=True)
 
     roi_preprocessed: list[tuple[str, MatLike, MatLike]] = []
     for name, roi_bgr in roi_images:
         logger.info("Preprocessing ROI '%s'…", name)
-        roi_gray = preprocess_image_for_features(roi_bgr)
+        roi_gray = preprocess_image_for_features(roi_bgr, sharpen=True)
         roi_preprocessed.append((name, roi_bgr, roi_gray))
 
     # --- Subtask 2: Keypoints & descriptors --------------------------------------
-    detector = build_orb_detector()
+    detector = build_orb_detector(n_features=10000)
 
     logger.info("Computing keypoints & descriptors for scene image…")
-    scene_kp, _scene_desc = compute_keypoints_and_descriptors(detector, full_gray)
+    scene_kp, scene_desc = compute_keypoints_and_descriptors(detector, full_gray)
 
     roi_features: list[tuple[str, MatLike, list[cv2.KeyPoint], MatLike]] = []
     for name, roi_bgr, roi_gray in roi_preprocessed:
@@ -297,7 +312,15 @@ def run_pipeline() -> None:
         len(roi_features),
         len(scene_kp),
     )
-    logger.info("TODO 3: implement matching + filtering")
+
+    # --- Subtask 3: Feature matching ---------------------------------------------
+    roi_matches: list[tuple[str, MatLike, list[cv2.KeyPoint], list[cv2.DMatch]]] = []
+    for name, roi_bgr, roi_kp, roi_desc in roi_features:
+        logger.info("Matching ROI '%s' against scene…", name)
+        good = match_descriptors(roi_desc, scene_desc)
+        roi_matches.append((name, roi_bgr, roi_kp, good))
+
+    logger.info("Subtask 3 complete: matching done for %d ROIs.", len(roi_matches))
     logger.info("TODO 4: implement localisation + drawing")
     logger.info("TODO 5: implement pair-level debug visualisations")
     logger.info("TODO 6: save final localisation image")
