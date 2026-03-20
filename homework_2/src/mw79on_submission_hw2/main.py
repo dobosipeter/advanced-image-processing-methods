@@ -190,7 +190,10 @@ def estimate_roi_center(
     good_matches: list[cv2.DMatch],
     scene_keypoints: list[cv2.KeyPoint],
 ) -> tuple[int, int]:
-    """TODO: Estimate the ROI centre position in the scene from matches.
+    """Estimate the ROI centre position in the scene from matches.
+
+    The centre is computed as the mean $(x, y)$ of the scene-side keypoint
+    coordinates for every good match.
 
     Args:
         good_matches: Filtered descriptor matches.
@@ -200,9 +203,17 @@ def estimate_roi_center(
         ``(x, y)`` pixel coordinates of the estimated ROI centre.
 
     Raises:
-        NotImplementedError: This function is not yet implemented.
+        ValueError: If *good_matches* is empty.
     """
-    raise NotImplementedError("TODO: implement ROI center estimation")
+    if not good_matches:
+        raise ValueError("Cannot estimate centre from zero matches")
+    pts = np.array(
+        [scene_keypoints[m.trainIdx].pt for m in good_matches], dtype=np.float64,
+    )
+    cx, cy = pts.mean(axis=0)
+    center = (int(round(cx)), int(round(cy)))
+    logger.info("Estimated ROI centre at (%d, %d) from %d matches", center[0], center[1], len(good_matches))
+    return center
 
 
 def center_to_bounding_box(
@@ -247,21 +258,29 @@ def draw_pair_debug_figure(
     good_matches: list[cv2.DMatch],
     output_path: Path,
 ) -> None:
-    """TODO: Save a per-ROI visualisation figure for analysis/debugging.
+    """Save a per-ROI visualisation figure showing matched keypoints.
+
+    Uses ``cv2.drawMatches`` to produce a side-by-side image of the ROI and
+    the scene with lines connecting each good match.
 
     Args:
-        roi_name: Human-readable name for the ROI (used in titles/filenames).
+        roi_name: Human-readable name for the ROI (used in logging).
         roi_bgr: The ROI image in BGR colour order.
         full_bgr: The full scene image in BGR colour order.
         roi_keypoints: Keypoints detected in the ROI.
         full_keypoints: Keypoints detected in the scene.
         good_matches: Filtered matches linking ROI ↔ scene keypoints.
         output_path: File path where the figure should be saved.
-
-    Raises:
-        NotImplementedError: This function is not yet implemented.
     """
-    raise NotImplementedError("TODO: implement pair debug figure generation")
+    vis: MatLike = cv2.drawMatches(
+        img1=roi_bgr, keypoints1=roi_keypoints,
+        img2=full_bgr, keypoints2=full_keypoints,
+        matches1to2=good_matches,
+        outImg=np.array([]),
+        flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
+    )
+    cv2.imwrite(str(output_path), vis)
+    logger.info("Saved debug figure for '%s' → %s", roi_name, output_path)
 
 
 def run_pipeline() -> None:
@@ -321,9 +340,43 @@ def run_pipeline() -> None:
         roi_matches.append((name, roi_bgr, roi_kp, good))
 
     logger.info("Subtask 3 complete: matching done for %d ROIs.", len(roi_matches))
-    logger.info("TODO 4: implement localisation + drawing")
-    logger.info("TODO 5: implement pair-level debug visualisations")
-    logger.info("TODO 6: save final localisation image")
+
+    # --- Subtask 4a: Localisation ------------------------------------------------
+    colors = [
+        (0, 255, 0),    # green
+        (255, 0, 0),    # blue
+        (0, 0, 255),    # red
+        (0, 255, 255),  # yellow
+    ]
+    scene_annotated = np.copy(np.asarray(full_bgr))
+
+    for idx, (name, roi_bgr, roi_kp, good) in enumerate(roi_matches):
+        if not good:
+            logger.warning("ROI '%s' has 0 good matches — skipping localisation.", name)
+            continue
+
+        center = estimate_roi_center(good, scene_kp)
+        roi_shape = np.asarray(roi_bgr).shape
+        scene_shape = np.asarray(full_bgr).shape
+        pt1, pt2 = center_to_bounding_box(center, roi_shape, scene_shape)
+
+        color = colors[idx % len(colors)]
+        cv2.rectangle(scene_annotated, pt1, pt2, color, thickness=3)
+        logger.info(
+            "ROI '%s': box (%d,%d)–(%d,%d), colour=%s",
+            name, pt1[0], pt1[1], pt2[0], pt2[1], color,
+        )
+
+    final_path = output_dir / "final_localization.png"
+    cv2.imwrite(str(final_path), scene_annotated)
+    logger.info("Saved final localisation image → %s", final_path)
+
+    # --- Subtask 4b: Per-ROI debug figures ---------------------------------------
+    for name, roi_bgr, roi_kp, good in roi_matches:
+        debug_path = matches_dir / f"{name}_matches.png"
+        draw_pair_debug_figure(name, roi_bgr, full_bgr, roi_kp, scene_kp, good, debug_path)
+
+    logger.info("Pipeline complete.")
 
 
 if __name__ == "__main__":

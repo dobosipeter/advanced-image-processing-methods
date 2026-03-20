@@ -22,10 +22,10 @@ The pipeline uses convolutional preprocessing, local feature detection, and desc
 \begin{enumerate}[leftmargin=*]
     \item \textbf{Preprocessing (Subtask~1)}:
         Both the full scene image and every ROI image are converted to grayscale and denoised with a $5\times5$ Gaussian blur.
-        An optional soft-sharpening pass (unsharp mask via convolution) is available but not enabled by default, as the denoised images already yield sufficient keypoints for reliable matching.
+        An unsharp-mask sharpening pass is applied after denoising (strength $0.30$) to recover fine texture detail lost during blurring, which significantly improves descriptor distinctiveness (see \textit{Parameter Tuning} below).
         ROI loading is dynamic using \texttt{Path.glob}, so the pipeline is independent of the number of ROI files.
     \item \textbf{Keypoint \& Descriptor Extraction (Subtask~2)}:
-        ORB (\texttt{cv2.ORB\_create}, \texttt{nfeatures=3000}) was chosen over SIFT for the following reasons:
+        ORB (\texttt{cv2.ORB\_create}, \texttt{nfeatures=10000}) was chosen over SIFT for the following reasons:
         \begin{itemize}[leftmargin=1.5em]
             \item Binary BRIEF-based descriptors are matched with Hamming distance, which is significantly faster than SIFT's 128-float L2 matching on a $2962\times1935$ scene image.
             \item The ROIs are axis-aligned crops at the same scale as the scene, so SIFT's scale-space advantage is unnecessary.
@@ -40,6 +40,22 @@ The pipeline uses convolutional preprocessing, local feature detection, and desc
         Bounding boxes are drawn with \texttt{cv2.rectangle} using the ROI dimensions, clamped to the scene boundaries.
         Per-ROI debug figures (side-by-side keypoints and match lines via \texttt{cv2.drawMatches}) are saved alongside the final localization image.
 \end{enumerate}
+
+\section*{Parameter Tuning}
+The initial configuration (no sharpening, \texttt{nfeatures=3000}) produced very few good matches for the two smaller ROIs.
+We iteratively refined two parameters and measured good matches after Lowe ratio filtering ($0.75$):
+
+\begin{center}
+\begin{tabular}{l|c c c c}
+    \textbf{Configuration} & \textbf{roi\_0} & \textbf{roi\_1} & \textbf{roi\_2} & \textbf{roi\_3} \\
+    \hline
+    No sharpen, 3k features & 1 & 6 & 137 & 58 \\
+    Sharpen 0.30, 3k features & 2 & 2 & 142 & 121 \\
+    \textbf{Sharpen 0.30, 10k features} & \textbf{7} & \textbf{11} & \textbf{203} & \textbf{184} \\
+\end{tabular}
+\end{center}
+
+Sharpening boosted matches for the larger ROIs by enhancing fine texture, while increasing \texttt{nfeatures} to 10\,000 was essential for the smaller ROIs: the $2962\times1935$ scene image needs a dense keypoint grid so that even small query regions have nearby matches.
 
 \section*{Results}
 % Uncomment when final artifacts are generated:
