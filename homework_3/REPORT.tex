@@ -41,7 +41,14 @@ The pipeline applies Gaussian denoising at multiple kernel sizes, JPEG compressi
         The compressed buffer size in bytes is recorded for computing compression ratios.
 
     \item \textbf{Quality Measurement (Task~4)}:
-        % TODO: Describe MSE, PSNR, SSIM computation and compression ratio.
+        Each reconstructed image (after denoising + WebP compression) is compared against the corresponding clean reference using three full-reference image quality assessment (FR~IQA) metrics:
+        \begin{itemize}[leftmargin=1.5em]
+            \item \textbf{MSE} -- Mean Squared Error, computed as the average of the squared per-pixel differences in float64.
+            \item \textbf{PSNR} -- Peak Signal-to-Noise Ratio in dB, via \texttt{cv2.PSNR}.
+            \item \textbf{SSIM} -- Structural Similarity Index (Wang et al., 2004), computed per-channel using an $11\times11$ Gaussian window ($\sigma=1.5$) and averaged across all pixels and channels.
+        \end{itemize}
+        The compression ratio is also recorded as $\text{raw\_size} / \text{compressed\_size}$.
+        All metrics are computed for every (kernel size, quality) combination, yielding $3 \times 10 = 30$ averaged measurement points.
 
     \item \textbf{Evaluation (Task~5)}:
         % TODO: Describe plots and optimal parameter selection.
@@ -58,6 +65,45 @@ The Gaussian filter was selected based on two factors:
 
 A larger kernel provides stronger smoothing and better noise suppression, but at the cost of blurring fine image details.
 The quality metrics in Task~4 will quantify this trade-off.
+
+\section*{Compression Quality Effect}
+Higher WebP quality values produce larger buffers but preserve more image detail.
+The table below shows averaged compression ratios (across all 10 images) for each kernel size and selected quality levels:
+
+\begin{center}
+\begin{tabular}{l|c c c c c}
+    \textbf{Kernel} & \textbf{q=10} & \textbf{q=30} & \textbf{q=50} & \textbf{q=70} & \textbf{q=100} \\
+    \hline
+    $3\times3$ & 134:1 & 83:1 & 59:1 & 43:1 & 7:1 \\
+    $5\times5$ & 153:1 & 99:1 & 73:1 & 55:1 & 9:1 \\
+    $7\times7$ & 174:1 & 118:1 & 90:1 & 70:1 & 13:1 \\
+\end{tabular}
+\end{center}
+
+Larger kernels smooth out more detail, which makes the image more compressible (higher ratios).
+At low quality settings the compressed size is very small but lossy artifacts accumulate on top of the denoising loss.
+At quality~100, WebP uses near-lossless encoding, resulting in much larger files with minimal additional compression distortion.
+
+\section*{Quality Metrics Summary}
+The following table shows the averaged MSE, PSNR, and SSIM for each kernel size and selected quality levels:
+
+\begin{center}
+\begin{tabular}{l|c c c|c c c|c c c}
+    & \multicolumn{3}{c|}{\textbf{MSE}} & \multicolumn{3}{c|}{\textbf{PSNR (dB)}} & \multicolumn{3}{c}{\textbf{SSIM}} \\
+    \textbf{Quality} & $3{\times}3$ & $5{\times}5$ & $7{\times}7$ &
+                       $3{\times}3$ & $5{\times}5$ & $7{\times}7$ &
+                       $3{\times}3$ & $5{\times}5$ & $7{\times}7$ \\
+    \hline
+    10  & 159 & 201 & 246 & 26.9 & 26.0 & 25.2 & 0.739 & 0.700 & 0.662 \\
+    30  & 123 & 169 & 221 & 28.0 & 26.8 & 25.7 & 0.788 & 0.738 & 0.689 \\
+    50  & 106 & 154 & 209 & 28.7 & 27.2 & 26.0 & 0.815 & 0.760 & 0.704 \\
+    70  &  97 & 146 & 201 & 29.1 & 27.5 & 26.2 & 0.832 & 0.776 & 0.716 \\
+    100 &  81 & 129 & 185 & 30.0 & 28.2 & 26.6 & 0.857 & 0.807 & 0.745 \\
+\end{tabular}
+\end{center}
+
+The $3\times3$ kernel consistently achieves the best quality across all metrics and quality levels, because it removes the least amount of image detail during denoising.
+However, this comes at the cost of less noise suppression and lower compression ratios compared to larger kernels.
 
 \section*{Results}
 % TODO: Add figures and discussion after Tasks 3--5 are implemented.

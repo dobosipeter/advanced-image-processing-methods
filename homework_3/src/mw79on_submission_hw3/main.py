@@ -127,31 +127,85 @@ def compress_image(
 
 
 # Quality Measurement
+def compute_mse(reference: np.ndarray, distorted: np.ndarray) -> float:
+    """Compute Mean Squared Error between two images.
+
+    Args:
+        reference: Clean reference image (uint8).
+        distorted: Distorted image (uint8).
+
+    Returns:
+        MSE value.
+    """
+    return float(np.mean((reference.astype(np.float64) - distorted.astype(np.float64)) ** 2))
+
 
 def compute_psnr(reference: np.ndarray, distorted: np.ndarray) -> float:
     """Compute Peak Signal-to-Noise Ratio between two images.
 
     Args:
-        reference: Clean reference image.
-        distorted: Distorted (noisy/compressed/denoised) image.
+        reference: Clean reference image (uint8).
+        distorted: Distorted image (uint8).
 
     Returns:
         PSNR value in dB.
     """
-    raise NotImplementedError
+    return float(cv2.PSNR(reference, distorted))
 
 
 def compute_ssim(reference: np.ndarray, distorted: np.ndarray) -> float:
-    """Compute Structural Similarity Index between two images.
+    """Compute the mean Structural Similarity Index between two images.
+
+    The SSIM is computed per-channel on a per-pixel basis using the formulation
+    from Wang et al. (2004) with an 11×11 Gaussian window (sigma=1.5) and the
+    default stabilisation constants (C1 and C2 derived from the dynamic range).
+    The per-pixel maps are averaged across all channels and all pixels to yield
+    a single scalar.
 
     Args:
-        reference: Clean reference image.
-        distorted: Distorted (noisy/compressed/denoised) image.
+        reference: Clean reference image (uint8, BGR).
+        distorted: Distorted image (uint8, BGR).
 
     Returns:
-        SSIM value in [0, 1].
+        Mean SSIM in [0, 1].
     """
-    raise NotImplementedError
+    C1 = (0.01 * 255) ** 2
+    C2 = (0.03 * 255) ** 2
+    ksize = (11, 11)
+    sigma = 1.5
+
+    ref = reference.astype(np.float64)
+    dist = distorted.astype(np.float64)
+
+    mu_ref = cv2.GaussianBlur(ref, ksize, sigma)
+    mu_dist = cv2.GaussianBlur(dist, ksize, sigma)
+
+    mu_ref_sq = mu_ref ** 2
+    mu_dist_sq = mu_dist ** 2
+    mu_ref_dist = mu_ref * mu_dist
+
+    sigma_ref_sq = cv2.GaussianBlur(ref ** 2, ksize, sigma) - mu_ref_sq
+    sigma_dist_sq = cv2.GaussianBlur(dist ** 2, ksize, sigma) - mu_dist_sq
+    sigma_ref_dist = cv2.GaussianBlur(ref * dist, ksize, sigma) - mu_ref_dist
+
+    numerator = (2 * mu_ref_dist + C1) * (2 * sigma_ref_dist + C2)
+    denominator = (mu_ref_sq + mu_dist_sq + C1) * (sigma_ref_sq + sigma_dist_sq + C2)
+
+    ssim_map = numerator / denominator
+    return float(np.mean(ssim_map))
+
+
+def compute_compression_ratio(raw_size: int, compressed_size: int) -> float:
+    """Compute the compression ratio.
+
+    Args:
+        raw_size: Uncompressed image size in bytes (H × W × C).
+        compressed_size: Compressed buffer size in bytes.
+
+    Returns:
+        Compression ratio (raw / compressed); higher means more compression.
+    """
+    return raw_size / compressed_size
 
 
 # Visualization
@@ -197,7 +251,7 @@ def main() -> None:
             ksize,
         )
 
-    # 3. Compression – encode each denoised image at every quality level
+    # 3. Compression: encode each denoised image at every quality level
     # compressed[kernel_size][quality] = [(name, clean, reconstructed, size_bytes), ...]
     compressed: dict[int, dict[int, list[tuple[str, np.ndarray, np.ndarray, int]]]] = {}
     for ksize in KERNEL_SIZES:
@@ -215,8 +269,38 @@ def main() -> None:
                 q,
             )
 
+    # 4. Quality metrics: compare reconstructed images against clean originals
+    # metrics[kernel_size][quality] = {"mse": [...], "psnr": [...], "ssim": [...], "cr": [...]}
+    metrics: dict[int, dict[int, dict[str, list[float]]]] = {}
+    for ksize in KERNEL_SIZES:
+        metrics[ksize] = {}
+        for q in QUALITY_LEVELS:
+            mse_vals, psnr_vals, ssim_vals, cr_vals = [], [], [], []
+            for name, clean_img, recon_img, size_bytes in compressed[ksize][q]:
+                raw_size = clean_img.nbytes
+                mse_vals.append(compute_mse(clean_img, recon_img))
+                psnr_vals.append(compute_psnr(clean_img, recon_img))
+                ssim_vals.append(compute_ssim(clean_img, recon_img))
+                cr_vals.append(compute_compression_ratio(raw_size, size_bytes))
+            metrics[ksize][q] = {
+                "mse": mse_vals,
+                "psnr": psnr_vals,
+                "ssim": ssim_vals,
+                "cr": cr_vals,
+            }
+            logger.info(
+                "Metrics computed: kernel %d×%d, quality %d  →  "
+                "MSE=%.1f  PSNR=%.2f dB  SSIM=%.4f  CR=%.1f:1",
+                ksize,
+                ksize,
+                q,
+                np.mean(mse_vals),
+                np.mean(psnr_vals),
+                np.mean(ssim_vals),
+                np.mean(cr_vals),
+            )
+
     # TODO: Implement and wire remaining pipeline stages
-    #   4. Compute quality metrics (MSE, PSNR, SSIM)
     #   5. Generate comparison plots
 
     logger.info("Remaining pipeline stages not yet implemented.")
