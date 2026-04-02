@@ -22,9 +22,14 @@ This [repository](https://github.com/dobosipeter/advanced-image-processing-metho
 - `homework_2/output/final_localization.png`: Final localization image with ROI bounding rectangles.
 - `homework_2/output/matches/`: Per-ROI matching debug figures.
 
-### Other
+### Homework 3 — Noise Reduction, Image Compression & Quality Measurement
 
-- `lab_slides/`: Course lecture/lab slide materials (kept out of git tracking via `.gitignore`).
+- `homework_3/src/mw79on_submission_hw3/main.py`: Main solution script.
+- `homework_3/data/description.pdf`: Official assignment description.
+- `homework_3/README.md`: Run instructions and notes.
+- `homework_3/data/clean/`: Clean reference images (Kodak dataset).
+- `homework_3/data/dobosi_peter_laszlo_norm_dist/`: Noisy image variants (Gaussian noise).
+- `homework_3/output/`: Generated figures and results.
 
 ## Quick Start
 
@@ -32,10 +37,11 @@ For setup and execution:
 
 - Homework 1: `homework_1/README.md`
 - Homework 2: `homework_2/README.md`
+- Homework 3: `homework_3/README.md`
 
 ## Python Environment
 
-Use one shared virtual environment at repository root for both homeworks:
+Use one shared virtual environment at repository root for all homeworks:
 
 ```bash
 python3 -m venv .venv
@@ -43,9 +49,10 @@ source .venv/bin/activate
 python -m pip install --upgrade pip
 pip install -e homework_1
 pip install -e homework_2
+pip install -e homework_3
 ```
 
-This keeps dependencies for both assignments in a single reproducible environment.
+This keeps dependencies for all assignments in a single reproducible environment.
 
 ## Note on Method Documentation Consistency
 
@@ -54,3 +61,4 @@ In this repository, implementations are kept explicit and Python OpenCV compatib
 
 - Homework 1: histogram-based enhancement with Python OpenCV color conversions.
 - Homework 2: ORB binary descriptors with BFMatcher (Hamming), Lowe-ratio filtering, and MAD-based outlier rejection for robust localization.
+- Homework 3: Gaussian denoising, JPEG compression, and quality metrics (PSNR, SSIM).

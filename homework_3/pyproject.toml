@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mw79on_submission_hw3"
+version = "1.0.0"
+dependencies = [
+	"opencv-python",
+	"numpy",
+	"matplotlib",
+]
+requires-python = ">=3.10"
+authors = [
+	{name = "Peter Dobosi", email = "dobosipeter96@gmail.com"}
+]
+maintainers = [
+	{name = "Peter Dobosi", email = "dobosipeter96@gmail.com"}
+]
+description = "My third homework submission to the AIPM class."
+readme = "README.md"
+
+[project.urls]
+Repository = "https://github.com/dobosipeter/advanced-image-processing-methods"
