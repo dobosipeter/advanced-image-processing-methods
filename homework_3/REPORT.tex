@@ -1,0 +1,70 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{amsmath}
+
+\title{Advanced Image Processing Methods\\Homework 3 Report}
+\author{Peter Dobosi}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section*{Goal}
+The task is to investigate how noise reduction and compression parameters affect reconstructed image quality and compression ratio.
+The pipeline applies Gaussian denoising at multiple kernel sizes, JPEG compression at varying quality levels, and evaluates results using full-reference image quality metrics (MSE, PSNR, SSIM).
+
+\section*{Method Summary}
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Dataset Loading (Task~1)}:
+        10 clean reference images (Kodak dataset, \texttt{kodim01}--\texttt{kodim10}) and their noisy counterparts are loaded dynamically using \texttt{Path.glob}.
+        The clean images are indexed from 1 while the noisy images are indexed from 0, so pairing is done by sorted order rather than by filename index.
+        Each pair is validated for successful loading and matching dimensions.
+
+    \item \textbf{Noise Reduction (Task~2)}:
+        The noisy images are corrupted with normally-distributed (Gaussian) noise, as indicated by the \texttt{norm\_dist} suffix in the dataset folder name.
+        A Gaussian low-pass filter (\texttt{cv2.GaussianBlur}) is the appropriate choice for this noise type: it optimally attenuates additive Gaussian noise while preserving image structure.
+        Three kernel sizes are evaluated: $3\times3$, $5\times5$, and $7\times7$.
+        Sigma is derived automatically by OpenCV from the kernel size.
+        Every noisy image is denoised with all three kernel sizes.
+
+    \item \textbf{Image Compression (Task~3)}:
+        % TODO: Describe JPEG compression with quality levels 10, 20, ..., 100.
+
+    \item \textbf{Quality Measurement (Task~4)}:
+        % TODO: Describe MSE, PSNR, SSIM computation and compression ratio.
+
+    \item \textbf{Evaluation (Task~5)}:
+        % TODO: Describe plots and optimal parameter selection.
+\end{enumerate}
+
+\section*{Filter Selection Rationale}
+The Gaussian filter was selected based on two factors:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Noise type match}: the dataset folder name (\texttt{dobosi\_peter\_laszlo\_norm\_dist}) indicates normally-distributed noise.
+        Gaussian blur is the optimal linear filter for additive Gaussian noise, as it minimizes mean squared error in the frequency domain.
+    \item \textbf{Simplicity}: among the candidate filters listed in the assignment (averaging, Gaussian, median, bilateral), the Gaussian filter requires only the kernel size parameter, with sigma derived automatically.
+        This makes systematic comparison across kernel sizes straightforward.
+\end{itemize}
+
+A larger kernel provides stronger smoothing and better noise suppression, but at the cost of blurring fine image details.
+The quality metrics in Task~4 will quantify this trade-off.
+
+\section*{Results}
+% TODO: Add figures and discussion after Tasks 3--5 are implemented.
+
+\section*{Reproducibility}
+From the \texttt{homework\_3/} directory:
+\begin{itemize}[leftmargin=*]
+    \item Install dependencies: \texttt{pip install -e .}
+    \item Run pipeline: \texttt{python src/mw79on\_submission\_hw3/main.py}
+\end{itemize}
+The script generates output figures in \texttt{output/}.
+This report is provided as \texttt{REPORT.pdf}.
+
+\end{document}

@@ -12,6 +12,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+KERNEL_SIZES: list[int] = [3, 5, 7]
+"""Gaussian kernel sizes to evaluate."""
 
 def get_project_root() -> Path:
     """Return the ``homework_3`` project root directory.
@@ -76,17 +78,24 @@ def load_image_pairs(
 
 
 # Noise Reduction
+def apply_gaussian_filter(image: np.ndarray, kernel_size: int) -> np.ndarray:
+    """Reduce Gaussian noise using a Gaussian blur filter.
 
-def apply_gaussian_filter(image: np.ndarray) -> np.ndarray:
-    """Reduce noise using a Gaussian blur filter.
+    The noisy images in this dataset are corrupted with normally-distributed
+    (Gaussian) noise, so use a Gaussian low-pass filter.
+
+    Sigma is set to 0 so that OpenCV derives it automatically from the kernel
+    size.
 
     Args:
-        image: Noisy input image (BGR).
+        image: Noisy input image (BGR, uint8).
+        kernel_size: Side length of the square Gaussian kernel.
 
     Returns:
-        Denoised image (BGR).
+        Denoised image (BGR, uint8).
     """
-    raise NotImplementedError
+    assert kernel_size % 2 == 1, f"Kernel size must be odd, got {kernel_size}"
+    return cv2.GaussianBlur(image, (kernel_size, kernel_size), sigmaX=0)
 
 
 # Image Compression
@@ -140,7 +149,6 @@ def plot_results() -> None:
 
 
 # Pipeline
-
 def main() -> None:
     """Run the full homework 3 pipeline end-to-end."""
     root = get_project_root()
@@ -161,8 +169,22 @@ def main() -> None:
     # 1. Load image pairs
     pairs = load_image_pairs(clean_dir, noisy_dir)
 
+    # 2. Noise reduction: apply Gaussian filter at each kernel size
+    # denoised[kernel_size] = [(name, clean, denoised), ...]
+    denoised: dict[int, list[tuple[str, np.ndarray, np.ndarray]]] = {}
+    for ksize in KERNEL_SIZES:
+        denoised[ksize] = []
+        for name, clean_img, noisy_img in pairs:
+            filtered = apply_gaussian_filter(noisy_img, ksize)
+            denoised[ksize].append((name, clean_img, filtered))
+        logger.info(
+            "Denoised %d images with %d×%d Gaussian kernel.",
+            len(pairs),
+            ksize,
+            ksize,
+        )
+
     # TODO: Implement and wire remaining pipeline stages
-    #   2. Apply noise reduction (per kernel size)
     #   3. Apply compression at varying quality levels
     #   4. Compute quality metrics (MSE, PSNR, SSIM)
     #   5. Generate comparison plots
