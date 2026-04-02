@@ -51,3 +51,9 @@ Build the PDF report (from `homework_3/`):
 ```bash
 pdflatex -interaction=nonstopmode -halt-on-error REPORT.tex
 ```
+
+## Personal Notes  
+  
+* Compared to the previous '_bite sized_' assignemnts, this one was larger, I would estimate it to '_meal sized_' :D. It took me roughly one working day (~7 hours) to complete.  
+* Similar to the previous assignemnts, I've found it to be fun and an interesting challenge. I've learned interesting new things while completing it.  
+* _The python opencv docs still feel like an afterthought :( ._ 

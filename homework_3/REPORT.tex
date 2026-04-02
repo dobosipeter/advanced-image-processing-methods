@@ -17,7 +17,7 @@
 
 \section*{Goal}
 The task is to investigate how noise reduction and compression parameters affect reconstructed image quality and compression ratio.
-The pipeline applies Gaussian denoising at multiple kernel sizes, JPEG compression at varying quality levels, and evaluates results using full-reference image quality metrics (MSE, PSNR, SSIM).
+The pipeline applies Gaussian denoising at multiple kernel sizes, WebP compression at varying quality levels, and evaluates results using full-reference image quality metrics (MSE, PSNR, SSIM).
 
 \section*{Method Summary}
 \begin{enumerate}[leftmargin=*]
@@ -45,13 +45,17 @@ The pipeline applies Gaussian denoising at multiple kernel sizes, JPEG compressi
         \begin{itemize}[leftmargin=1.5em]
             \item \textbf{MSE} -- Mean Squared Error, computed as the average of the squared per-pixel differences in float64.
             \item \textbf{PSNR} -- Peak Signal-to-Noise Ratio in dB, via \texttt{cv2.PSNR}.
-            \item \textbf{SSIM} -- Structural Similarity Index (Wang et al., 2004), computed per-channel using an $11\times11$ Gaussian window ($\sigma=1.5$) and averaged across all pixels and channels.
+            \item \textbf{SSIM} -- Mean Structural Similarity Index, or MSSIM (Wang et al., 2004).
+                Unlike the global SSIM formula shown in the course slides, this implementation computes a local SSIM at every pixel using an $11\times11$ Gaussian window ($\sigma=1.5$), then averages the map.
+                MSSIM is the standard variant used in practice and produces more accurate scores by accounting for spatially varying distortions.
         \end{itemize}
         The compression ratio is also recorded as $\text{raw\_size} / \text{compressed\_size}$.
         All metrics are computed for every (kernel size, quality) combination, yielding $3 \times 10 = 30$ averaged measurement points.
 
     \item \textbf{Evaluation (Task~5)}:
-        % TODO: Describe plots and optimal parameter selection.
+        The averaged metrics (across all 10 images) are plotted as line charts with one line per kernel size and the WebP quality parameter on the x-axis.
+        Four subplots are produced: MSE ($\downarrow$), PSNR ($\uparrow$), SSIM ($\uparrow$), and compression ratio vs.\ quality.
+        The optimal quality parameter is identified using the Kneedle algorithm (Satopaa et al., 2011), which detects the point of maximum curvature --- the ``knee'' where further increases in quality yield diminishing returns.
 \end{enumerate}
 
 \section*{Filter Selection Rationale}
@@ -71,12 +75,14 @@ Higher WebP quality values produce larger buffers but preserve more image detail
 The table below shows averaged compression ratios (across all 10 images) for each kernel size and selected quality levels:
 
 \begin{center}
-\begin{tabular}{l|c c c c c}
-    \textbf{Kernel} & \textbf{q=10} & \textbf{q=30} & \textbf{q=50} & \textbf{q=70} & \textbf{q=100} \\
+\begin{tabular}{l|c c c}
+    \textbf{Quality} & $3{\times}3$ & $5{\times}5$ & $7{\times}7$ \\
     \hline
-    $3\times3$ & 134:1 & 83:1 & 59:1 & 43:1 & 7:1 \\
-    $5\times5$ & 153:1 & 99:1 & 73:1 & 55:1 & 9:1 \\
-    $7\times7$ & 174:1 & 118:1 & 90:1 & 70:1 & 13:1 \\
+    10  & 134:1 & 153:1 & 174:1 \\
+    30  &  83:1 &  99:1 & 118:1 \\
+    50  &  59:1 &  73:1 &  90:1 \\
+    70  &  43:1 &  55:1 &  70:1 \\
+    100 &   7:1 &   9:1 &  13:1 \\
 \end{tabular}
 \end{center}
 
@@ -89,7 +95,7 @@ The following table shows the averaged MSE, PSNR, and SSIM for each kernel size 
 
 \begin{center}
 \begin{tabular}{l|c c c|c c c|c c c}
-    & \multicolumn{3}{c|}{\textbf{MSE}} & \multicolumn{3}{c|}{\textbf{PSNR (dB)}} & \multicolumn{3}{c}{\textbf{SSIM}} \\
+    & \multicolumn{3}{c|}{\textbf{MSE} ($\downarrow$)} & \multicolumn{3}{c|}{\textbf{PSNR} ($\uparrow$, dB)} & \multicolumn{3}{c}{\textbf{SSIM} ($\uparrow$)} \\
     \textbf{Quality} & $3{\times}3$ & $5{\times}5$ & $7{\times}7$ &
                        $3{\times}3$ & $5{\times}5$ & $7{\times}7$ &
                        $3{\times}3$ & $5{\times}5$ & $7{\times}7$ \\
@@ -106,7 +112,44 @@ The $3\times3$ kernel consistently achieves the best quality across all metrics 
 However, this comes at the cost of less noise suppression and lower compression ratios compared to larger kernels.
 
 \section*{Results}
-% TODO: Add figures and discussion after Tasks 3--5 are implemented.
+
+Figure~\ref{fig:metrics} shows the four evaluation plots.
+All metrics improve monotonically with increasing quality, and the $3\times3$ kernel consistently achieves the best image quality.
+Larger kernels yield higher compression ratios because smoother images compress more efficiently, but at the cost of losing fine detail (lower PSNR and SSIM).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{output/metrics_vs_quality.png}
+    \caption{MSE, PSNR, SSIM (MSSIM), and compression ratio averaged over 10 images, for three Gaussian kernel sizes (3×3, 5×5, 7×7).}
+    \label{fig:metrics}
+\end{figure}
+
+\section*{Optimal Parameter Combination}
+The assignment asks for the combination providing the best image quality paired with a favourable compression ratio, which leans towards prioritising quality.
+The $3\times3$ kernel is the clear winner on all quality metrics, so the question reduces to choosing the quality parameter.
+
+\subsection*{Identifying the Knee Point}
+Unlike the example diagrams in the assignment, my curves do not exhibit a single dramatic inflection point.
+Visual inspection suggests two regions of diminishing returns: one around $q=30$--$40$ where the initial steep quality improvement flattens, and another around $q=70$--$80$ where quality gains become marginal while file size grows rapidly.
+
+To identify the knee objectively, I applied the Kneedle algorithm (Satopaa et al., 2011), which detects the point of maximum curvature on a normalised curve.
+For the $3\times3$ kernel, Kneedle identifies:
+\begin{itemize}[leftmargin=*]
+    \item PSNR knee at $q=40$ (quality gains flatten beyond this point)
+    \item Compression ratio knee at $q=30$ (compression drops sharply beyond here)
+\end{itemize}
+
+\subsection*{Recommended Combination}
+Given the assignment's emphasis on quality, I select \textbf{kernel $3\times3$ at WebP quality 40}, achieving:
+\begin{itemize}[leftmargin=*]
+    \item PSNR = 28.40\,dB
+    \item SSIM (MSSIM) = 0.8044
+    \item Compression ratio = 69.0:1
+\end{itemize}
+
+This sits at the PSNR knee --- the point beyond which further quality increases require disproportionately larger files.
+The second inflection region ($q=70$--$80$) could be preferred for use cases that demand higher absolute quality at the expense of compression (e.g.\ medical imaging or archival), while the $q=30$--$40$ region is more suitable when storage efficiency is the primary concern (e.g.\ web thumbnails).
+In practice, the ideal compromise depends on the downstream application; the Kneedle-detected knee provides an objective, reproducible starting point for this trade-off.
 
 \section*{Reproducibility}
 From the \texttt{homework\_3/} directory:

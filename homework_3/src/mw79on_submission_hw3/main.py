@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+from kneed import KneeLocator
 
 logging.basicConfig(
     level=logging.INFO,
@@ -154,20 +155,24 @@ def compute_psnr(reference: np.ndarray, distorted: np.ndarray) -> float:
 
 
 def compute_ssim(reference: np.ndarray, distorted: np.ndarray) -> float:
-    """Compute the mean Structural Similarity Index between two images.
+    """Compute the Mean Structural Similarity Index (MSSIM) between two images.
 
-    The SSIM is computed per-channel on a per-pixel basis using the formulation
-    from Wang et al. (2004) with an 11×11 Gaussian window (sigma=1.5) and the
-    default stabilisation constants (C1 and C2 derived from the dynamic range).
-    The per-pixel maps are averaged across all channels and all pixels to yield
-    a single scalar.
+    This implementation uses the *mean* SSIM variant (MSSIM) rather than the
+    global SSIM shown in the course slides.  MSSIM computes a local SSIM value
+    at every pixel using a sliding Gaussian window, then averages the resulting
+    map.  This is the standard formulation from Wang et al. (2004) and produces
+    more accurate scores because it accounts for spatially varying distortions
+    instead of collapsing the entire image into a single global statistic.
+
+    Window: 11×11 Gaussian, sigma = 1.5.
+    Stabilisation constants: C1 = (0.01 × 255)², C2 = (0.03 × 255)².
 
     Args:
         reference: Clean reference image (uint8, BGR).
         distorted: Distorted image (uint8, BGR).
 
     Returns:
-        Mean SSIM in [0, 1].
+        Mean SSIM (MSSIM) in [0, 1].
     """
     C1 = (0.01 * 255) ** 2
     C2 = (0.03 * 255) ** 2
@@ -208,11 +213,80 @@ def compute_compression_ratio(raw_size: int, compressed_size: int) -> float:
     return raw_size / compressed_size
 
 
-# Visualization
+# Visualization & Evaluation
+def plot_results(
+    metrics: dict[int, dict[int, dict[str, list[float]]]],
+    kernel_sizes: list[int],
+    quality_levels: list[int],
+    output_dir: Path,
+) -> None:
+    """Generate evaluation plots and save to the output directory.
 
-def plot_results() -> None:
-    """Generate comparison figures and save to the output directory."""
-    raise NotImplementedError
+    Produces a single figure with four subplots (MSE, PSNR, SSIM, compression
+    ratio), each showing one line per kernel size with the quality parameter on
+    the x-axis.  Values are averaged across all images.
+
+    Args:
+        metrics: Nested dict ``metrics[kernel][quality][metric_name] -> list[float]``.
+        kernel_sizes: Kernel sizes used for denoising.
+        quality_levels: WebP quality levels evaluated.
+        output_dir: Directory to save the output figure.
+    """
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    fig.suptitle(
+        "Image Quality & Compression vs. WebP Quality Parameter",
+        fontsize=14,
+        fontweight="bold",
+    )
+
+    metric_keys: list[str] = ["mse", "psnr", "ssim", "cr"]
+    titles: list[str] = [
+        "MSE  (↓ lower is better)",
+        "PSNR  (↑ higher is better)",
+        "SSIM / MSSIM  (↑ higher is better)",
+        "Compression Ratio  (↑ higher = more compression)",
+    ]
+    ylabels: list[str] = ["MSE", "PSNR (dB)", "SSIM", "Ratio (×)"]
+
+    for idx, (key, title, ylabel) in enumerate(zip(metric_keys, titles, ylabels)):
+        ax = axes[idx // 2][idx % 2]
+        for ksize in kernel_sizes:
+            means: list[float] = [
+                float(np.mean(metrics[ksize][q][key])) for q in quality_levels
+            ]
+            ax.plot(quality_levels, means, marker="o", label=f"{ksize}×{ksize}")
+        ax.set_title(title)
+        ax.set_xlabel("WebP Quality")
+        ax.set_ylabel(ylabel)
+        ax.legend()
+        ax.grid(True, alpha=0.3)
+
+    fig.tight_layout()
+    output_path: Path = output_dir / "metrics_vs_quality.png"
+    fig.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    logger.info("Saved metrics plot to %s", output_path)
+
+
+def find_knee_point(
+    quality_levels: list[int],
+    values: list[float],
+    curve: str,
+    direction: str,
+) -> int | None:
+    """Find the knee/elbow point in a curve using the Kneedle algorithm.
+
+    Args:
+        quality_levels: X-axis values (quality parameters).
+        values: Y-axis values (metric averages).
+        curve: One of ``"concave"`` or ``"convex"``.
+        direction: One of ``"increasing"`` or ``"decreasing"``.
+
+    Returns:
+        Quality level at the detected knee, or ``None`` if no knee found.
+    """
+    kl = KneeLocator(quality_levels, values, curve=curve, direction=direction, S=1.0)
+    return kl.knee
 
 
 # Pipeline
@@ -275,7 +349,10 @@ def main() -> None:
     for ksize in KERNEL_SIZES:
         metrics[ksize] = {}
         for q in QUALITY_LEVELS:
-            mse_vals, psnr_vals, ssim_vals, cr_vals = [], [], [], []
+            mse_vals: list[float] = []
+            psnr_vals: list[float] = []
+            ssim_vals: list[float] = []
+            cr_vals: list[float] = []
             for name, clean_img, recon_img, size_bytes in compressed[ksize][q]:
                 raw_size = clean_img.nbytes
                 mse_vals.append(compute_mse(clean_img, recon_img))
@@ -289,21 +366,43 @@ def main() -> None:
                 "cr": cr_vals,
             }
             logger.info(
-                "Metrics computed: kernel %d×%d, quality %d  →  "
-                "MSE=%.1f  PSNR=%.2f dB  SSIM=%.4f  CR=%.1f:1",
-                ksize,
-                ksize,
-                q,
-                np.mean(mse_vals),
-                np.mean(psnr_vals),
-                np.mean(ssim_vals),
-                np.mean(cr_vals),
+                "Metrics computed: kernel %d×%d, quality %d  →  MSE=%.1f  PSNR=%.2f dB  SSIM=%.4f  CR=%.1f:1",
+                ksize, ksize, q,
+                np.mean(mse_vals), np.mean(psnr_vals),
+                np.mean(ssim_vals), np.mean(cr_vals),
             )
 
-    # TODO: Implement and wire remaining pipeline stages
-    #   5. Generate comparison plots
+    # 5. Visualization & evaluation
+    plot_results(metrics, KERNEL_SIZES, QUALITY_LEVELS, output_dir)
 
-    logger.info("Remaining pipeline stages not yet implemented.")
+    # Detect knee points using the Kneedle algorithm on the 3×3 kernel
+    # (best quality kernel — the assignment prioritises quality over compression)
+    psnr_means: list[float] = [
+        float(np.mean(metrics[3][q]["psnr"])) for q in QUALITY_LEVELS
+    ]
+    psnr_knee: int | None = find_knee_point(
+        QUALITY_LEVELS, psnr_means, curve="concave", direction="increasing",
+    )
+    cr_means: list[float] = [
+        float(np.mean(metrics[3][q]["cr"])) for q in QUALITY_LEVELS
+    ]
+    cr_knee: int | None = find_knee_point(
+        QUALITY_LEVELS, cr_means, curve="convex", direction="decreasing",
+    )
+    logger.info("Kneedle detected PSNR knee at quality=%s, CR knee at quality=%s", psnr_knee, cr_knee)
+
+    # Use the PSNR knee as the recommended quality (quality-leaning choice)
+    best_q: int = psnr_knee if psnr_knee is not None else 70
+    best_ksize: int = 3
+    logger.info(
+        "Recommended combination: kernel %d×%d, quality %d  →  PSNR=%.2f dB, SSIM=%.4f, CR=%.1f:1",
+        best_ksize, best_ksize, best_q,
+        float(np.mean(metrics[best_ksize][best_q]["psnr"])),
+        float(np.mean(metrics[best_ksize][best_q]["ssim"])),
+        float(np.mean(metrics[best_ksize][best_q]["cr"])),
+    )
+
+    logger.info("Pipeline complete.")
 
 
 if __name__ == "__main__":
