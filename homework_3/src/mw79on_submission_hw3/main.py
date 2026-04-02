@@ -28,14 +28,51 @@ def load_image_pairs(
 ) -> list[tuple[str, np.ndarray, np.ndarray]]:
     """Load matching pairs of clean and noisy images.
 
+    Images are discovered dynamically via ``Path.glob``.  The clean set is
+    indexed from 1 (``kodim01.png`` … ``kodim10.png``) while the noisy set is
+    indexed from 0 (``kodim00_noisy.png`` … ``kodim09_noisy.png``), so pairing
+    is done by sorted order rather than by filename index.
+
     Args:
         clean_dir: Path to directory containing clean reference images.
         noisy_dir: Path to directory containing noisy images.
 
     Returns:
-        List of (name, clean_image, noisy_image) tuples in BGR format.
+        Sorted list of ``(name, clean_image, noisy_image)`` tuples in BGR
+        format, where *name* is the clean filename stem (e.g. ``"kodim01"``).
     """
-    raise NotImplementedError
+    clean_paths = sorted(clean_dir.glob("*.png"))
+    noisy_paths = sorted(noisy_dir.glob("*.png"))
+
+    assert len(clean_paths) > 0, f"No clean images found in {clean_dir}"
+    assert len(noisy_paths) > 0, f"No noisy images found in {noisy_dir}"
+    assert len(clean_paths) == len(noisy_paths), (
+        f"Image count mismatch: {len(clean_paths)} clean vs {len(noisy_paths)} noisy"
+    )
+
+    pairs: list[tuple[str, np.ndarray, np.ndarray]] = []
+    for clean_path, noisy_path in zip(clean_paths, noisy_paths):
+        clean_img = cv2.imread(str(clean_path))
+        noisy_img = cv2.imread(str(noisy_path))
+
+        assert clean_img is not None, f"Failed to load clean image: {clean_path}"
+        assert noisy_img is not None, f"Failed to load noisy image: {noisy_path}"
+        assert clean_img.shape == noisy_img.shape, (
+            f"Shape mismatch for {clean_path.name} / {noisy_path.name}: "
+            f"{clean_img.shape} vs {noisy_img.shape}"
+        )
+
+        name = clean_path.stem
+        pairs.append((name, clean_img, noisy_img))
+        logger.info(
+            "Loaded pair: %s ↔ %s  (%s)",
+            clean_path.name,
+            noisy_path.name,
+            "×".join(str(d) for d in clean_img.shape),
+        )
+
+    logger.info("Loaded %d image pairs.", len(pairs))
+    return pairs
 
 
 # Noise Reduction
@@ -121,14 +158,16 @@ def main() -> None:
     logger.info("Noisy images: %s", noisy_dir)
     logger.info("Output dir:   %s", output_dir)
 
-    # TODO: Implement and wire pipeline stages together
-    #   1. Load image pairs
-    #   2. Apply noise reduction
+    # 1. Load image pairs
+    pairs = load_image_pairs(clean_dir, noisy_dir)
+
+    # TODO: Implement and wire remaining pipeline stages
+    #   2. Apply noise reduction (per kernel size)
     #   3. Apply compression at varying quality levels
-    #   4. Compute quality metrics (PSNR, SSIM)
+    #   4. Compute quality metrics (MSE, PSNR, SSIM)
     #   5. Generate comparison plots
 
-    logger.info("Not yet implemented.")
+    logger.info("Remaining pipeline stages not yet implemented.")
 
 
 if __name__ == "__main__":
