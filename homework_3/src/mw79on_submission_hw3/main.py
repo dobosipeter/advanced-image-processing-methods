@@ -15,6 +15,9 @@ logger = logging.getLogger(__name__)
 KERNEL_SIZES: list[int] = [3, 5, 7]
 """Gaussian kernel sizes to evaluate."""
 
+QUALITY_LEVELS: list[int] = list(range(10, 101, 10))
+"""WebP quality parameters to evaluate (10, 20, …, 100)."""
+
 def get_project_root() -> Path:
     """Return the ``homework_3`` project root directory.
 
@@ -99,18 +102,28 @@ def apply_gaussian_filter(image: np.ndarray, kernel_size: int) -> np.ndarray:
 
 
 # Image Compression
+def compress_image(
+    image: np.ndarray,
+    quality: int,
+) -> tuple[np.ndarray, int]:
+    """Compress an image using WebP encoding at the given quality level.
 
-def compress_image(image: np.ndarray, quality: int) -> np.ndarray:
-    """Compress an image using JPEG encoding at the given quality level.
+    The image is encoded into an in-memory WebP buffer and immediately decoded
+    back, simulating a lossy compression round-trip.
 
     Args:
-        image: Input image (BGR).
-        quality: JPEG quality parameter (0–100).
+        image: Input image (BGR, uint8).
+        quality: WebP quality parameter (1–100).
 
     Returns:
-        Reconstructed image after compression (BGR).
+        Tuple of (reconstructed image in BGR uint8, compressed size in bytes).
     """
-    raise NotImplementedError
+    ok, buf = cv2.imencode(".webp", image, [cv2.IMWRITE_WEBP_QUALITY, quality])
+    assert ok, f"WebP encoding failed at quality={quality}"
+    compressed_size = len(buf)
+    reconstructed = cv2.imdecode(buf, cv2.IMREAD_COLOR)
+    assert reconstructed is not None, "WebP decoding failed"
+    return reconstructed, compressed_size
 
 
 # Quality Measurement
@@ -184,8 +197,25 @@ def main() -> None:
             ksize,
         )
 
+    # 3. Compression – encode each denoised image at every quality level
+    # compressed[kernel_size][quality] = [(name, clean, reconstructed, size_bytes), ...]
+    compressed: dict[int, dict[int, list[tuple[str, np.ndarray, np.ndarray, int]]]] = {}
+    for ksize in KERNEL_SIZES:
+        compressed[ksize] = {}
+        for q in QUALITY_LEVELS:
+            compressed[ksize][q] = []
+            for name, clean_img, denoised_img in denoised[ksize]:
+                reconstructed, size_bytes = compress_image(denoised_img, q)
+                compressed[ksize][q].append((name, clean_img, reconstructed, size_bytes))
+            logger.info(
+                "Compressed %d images: kernel %d×%d, WebP quality %d.",
+                len(pairs),
+                ksize,
+                ksize,
+                q,
+            )
+
     # TODO: Implement and wire remaining pipeline stages
-    #   3. Apply compression at varying quality levels
     #   4. Compute quality metrics (MSE, PSNR, SSIM)
     #   5. Generate comparison plots
 

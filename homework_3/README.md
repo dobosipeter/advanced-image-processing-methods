@@ -1,6 +1,6 @@
 # Homework 3 — Noise Reduction, Image Compression & Quality Measurement
 
-This folder contains the solution for Homework 3 (Gaussian denoising, JPEG/WebP compression, and image quality assessment using MSE/PSNR/SSIM).
+This folder contains the solution for Homework 3 (Gaussian denoising, WebP compression, and image quality assessment using MSE/PSNR/SSIM).
 
 ## Contents
 
@@ -42,7 +42,7 @@ python src/mw79on_submission_hw3/main.py
 The script executes the full pipeline:
 
 1. **Noise Reduction**: Loads clean/noisy image pairs, applies Gaussian filtering to reduce normally-distributed noise.
-2. **Image Compression**: Compresses images using JPEG or WebP at varying quality levels.
+2. **Image Compression**: Compresses denoised images using WebP at quality levels 10, 20, …, 100.
 3. **Quality Measurement**: Computes MSE, PSNR and SSIM between reference and processed images.
 4. **Visualization**: Generates comparison figures saved to `output/`.
 

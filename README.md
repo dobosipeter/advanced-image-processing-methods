@@ -61,4 +61,4 @@ In this repository, implementations are kept explicit and Python OpenCV compatib
 
 - Homework 1: histogram-based enhancement with Python OpenCV color conversions.
 - Homework 2: ORB binary descriptors with BFMatcher (Hamming), Lowe-ratio filtering, and MAD-based outlier rejection for robust localization.
-- Homework 3: Gaussian denoising, JPEG compression, and quality metrics (PSNR, SSIM).
+- Homework 3: Gaussian denoising, WebP compression, and quality metrics (MSE, PSNR, SSIM).

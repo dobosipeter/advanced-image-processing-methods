@@ -34,7 +34,11 @@ The pipeline applies Gaussian denoising at multiple kernel sizes, JPEG compressi
         Every noisy image is denoised with all three kernel sizes.
 
     \item \textbf{Image Compression (Task~3)}:
-        % TODO: Describe JPEG compression with quality levels 10, 20, ..., 100.
+        Each denoised image is compressed using WebP lossy encoding (\texttt{cv2.imencode} with \texttt{IMWRITE\_WEBP\_QUALITY}).
+        The compressed buffer is immediately decoded back (\texttt{cv2.imdecode}) to obtain the reconstructed image, simulating a lossy round-trip.
+        Quality levels from 10 to 100 in steps of 10 are evaluated.
+        Every denoised image (3 kernel sizes $\times$ 10 images) is compressed at all 10 quality levels, yielding 300 reconstructed images.
+        The compressed buffer size in bytes is recorded for computing compression ratios.
 
     \item \textbf{Quality Measurement (Task~4)}:
         % TODO: Describe MSE, PSNR, SSIM computation and compression ratio.
