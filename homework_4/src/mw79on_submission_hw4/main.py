@@ -143,7 +143,12 @@ def rectify_uncalibrated(
     image_size: tuple[int, int],
 ) -> tuple[np.ndarray, np.ndarray]:
     """Compute the rectifying homographies for the left and right views."""
-    raise NotImplementedError
+    retval, H_left, H_right = cv2.stereoRectifyUncalibrated(
+        points_left, points_right, fundamental_matrix, image_size,
+    )
+    assert retval, "stereoRectifyUncalibrated failed"
+    logger.info("Rectifying homographies computed")
+    return H_left, H_right
 
 
 def warp_with_homography(
@@ -152,7 +157,7 @@ def warp_with_homography(
     image_size: tuple[int, int],
 ) -> np.ndarray:
     """Apply a perspective warp to *image* using *homography*."""
-    raise NotImplementedError
+    return cv2.warpPerspective(image, homography, image_size)
 
 
 # 5. Disparity computation
@@ -206,6 +211,18 @@ def main() -> None:
     # 3. Fundamental matrix estimation
     F, inlier_left, inlier_right = estimate_fundamental_matrix(pts_left, pts_right)
     logger.info("Subtask 3 complete.")
+
+    # 4. Uncalibrated stereo rectification
+    h, w = left_gray.shape[:2]
+    image_size = (w, h)
+    H_left, H_right = rectify_uncalibrated(
+        inlier_left, inlier_right, F, image_size,
+    )
+    rect_left = warp_with_homography(left_gray, H_left, image_size)
+    rect_right = warp_with_homography(right_gray, H_right, image_size)
+    cv2.imwrite(str(output_dir / "rectified_left.png"), rect_left)
+    cv2.imwrite(str(output_dir / "rectified_right.png"), rect_right)
+    logger.info("Subtask 4 complete — rectified images saved to output/.")
 
 
 if __name__ == "__main__":
