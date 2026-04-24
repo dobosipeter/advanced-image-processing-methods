@@ -65,7 +65,10 @@ def load_stereo_pair(
 # 2. Keypoints, descriptors, matching
 def detect_and_describe(image: np.ndarray) -> tuple[list[cv2.KeyPoint], np.ndarray]:
     """Detect keypoints and compute descriptors on a grayscale image."""
-    raise NotImplementedError
+    sift = cv2.SIFT_create()
+    keypoints, descriptors = sift.detectAndCompute(image, None)
+    logger.info("Detected %d keypoints", len(keypoints))
+    return keypoints, descriptors
 
 
 def match_and_extract_points(
@@ -80,7 +83,23 @@ def match_and_extract_points(
         Tuple ``(points_left, points_right)`` as ``float32`` arrays of shape
         ``(N, 2)`` containing the matched pixel coordinates from each view.
     """
-    raise NotImplementedError
+    index_params = {"algorithm": 1, "trees": 5}
+    search_params = {"checks": 50}
+    flann = cv2.FlannBasedMatcher(index_params, search_params)
+
+    knn_matches = flann.knnMatch(descriptors_left, descriptors_right, k=2)
+
+    good: list[cv2.DMatch] = []
+    for m, n in knn_matches:
+        if m.distance < 0.75 * n.distance:
+            good.append(m)
+
+    good.sort(key=lambda m: m.distance)
+    logger.info("Good matches after Lowe's ratio test: %d", len(good))
+
+    pts_left = np.float32([keypoints_left[m.queryIdx].pt for m in good])
+    pts_right = np.float32([keypoints_right[m.trainIdx].pt for m in good])
+    return pts_left, pts_right
 
 
 # 3. Fundamental matrix estimation
@@ -156,8 +175,15 @@ def main() -> None:
 
     # 1. Load stereo pair
     left_gray, right_gray = load_stereo_pair(left_path, right_path)
-
     logger.info("Subtask 1 complete.")
+
+    # 2. Keypoint detection & matching
+    kp_left, desc_left = detect_and_describe(left_gray)
+    kp_right, desc_right = detect_and_describe(right_gray)
+    pts_left, pts_right = match_and_extract_points(
+        kp_left, desc_left, kp_right, desc_right,
+    )
+    logger.info("Subtask 2 complete — %d matched point pairs.", len(pts_left))
 
 
 if __name__ == "__main__":
