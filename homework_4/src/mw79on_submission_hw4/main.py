@@ -114,7 +114,25 @@ def estimate_fundamental_matrix(
         ``3x3`` fundamental matrix and the inlier arrays contain only the
         point pairs whose mask value is ``1``.
     """
-    raise NotImplementedError
+    F, mask = cv2.findFundamentalMat(
+        points_left, points_right,
+        method=cv2.FM_RANSAC,
+        ransacReprojThreshold=3.0,
+        confidence=0.99,
+    )
+    inlier_mask = np.ravel(mask) == 1
+    inlier_left = points_left[inlier_mask]
+    inlier_right = points_right[inlier_mask]
+
+    assert F.shape == (3, 3), f"Unexpected F shape: {F.shape}"
+    assert inlier_left.shape[0] >= 8, (
+        f"Only {inlier_left.shape[0]} inliers — need at least 8"
+    )
+    logger.info(
+        "Fundamental matrix estimated — %d / %d inliers",
+        inlier_left.shape[0], points_left.shape[0],
+    )
+    return F, inlier_left, inlier_right
 
 
 # 4. Uncalibrated stereo rectification
@@ -184,6 +202,10 @@ def main() -> None:
         kp_left, desc_left, kp_right, desc_right,
     )
     logger.info("Subtask 2 complete — %d matched point pairs.", len(pts_left))
+
+    # 3. Fundamental matrix estimation
+    F, inlier_left, inlier_right = estimate_fundamental_matrix(pts_left, pts_right)
+    logger.info("Subtask 3 complete.")
 
 
 if __name__ == "__main__":
