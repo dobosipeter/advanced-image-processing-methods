@@ -10,7 +10,6 @@ estimation, uncalibrated rectification, and Semi-Global Block Matching.
 - `data/description.pdf`: official assignment description.
 - `src/mw79on_submission_hw4/main.py`: complete pipeline implementation.
 - `output/`: generated figures and results.
-- `PLAN.md`: detailed plan and design decisions for the assignment.
 
 ## Requirements
 

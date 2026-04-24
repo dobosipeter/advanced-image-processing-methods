@@ -33,8 +33,33 @@ def get_project_root() -> Path:
 def load_stereo_pair(
     left_path: Path, right_path: Path
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Load the left/right stereo images as single-channel grayscale arrays."""
-    raise NotImplementedError
+    """Load the left/right stereo images as single-channel grayscale arrays.
+
+    Both files are read with ``cv2.IMREAD_GRAYSCALE`` so the rest of the
+    pipeline operates on ``uint8`` 2-D arrays.  The two images are required
+    to have identical shape because the downstream rectification step
+    assumes a single common ``(width, height)``.
+
+    Args:
+        left_path: Path to the left view PNG.
+        right_path: Path to the right view PNG.
+
+    Returns:
+        Tuple ``(left_gray, right_gray)`` of single-channel ``uint8`` arrays.
+    """
+    left: cv2.typing.MatLike | None = cv2.imread(str(left_path), cv2.IMREAD_GRAYSCALE)
+    right: cv2.typing.MatLike | None = cv2.imread(str(right_path), cv2.IMREAD_GRAYSCALE)
+
+    assert left is not None, f"Failed to load left image: {left_path}"
+    assert right is not None, f"Failed to load right image: {right_path}"
+    assert left.shape == right.shape, (
+        f"Stereo pair shape mismatch: left {left.shape} vs right {right.shape}"
+    )
+
+    h, w = left.shape[:2]
+    logger.info("Loaded left  image: %s  (%dx%d, %s)", left_path.name, w, h, left.dtype)
+    logger.info("Loaded right image: %s  (%dx%d, %s)", right_path.name, w, h, right.dtype)
+    return left, right
 
 
 # 2. Keypoints, descriptors, matching
@@ -116,7 +141,23 @@ def save_results_figure(
 # Pipeline
 def main() -> None:
     """Run the full homework 4 pipeline end-to-end."""
-    raise NotImplementedError
+    root = get_project_root()
+    data_dir = root / "data" / "dobosi_peter_laszlo"
+    output_dir = root / "output"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    left_path = data_dir / "im0.png"
+    right_path = data_dir / "im1.png"
+
+    assert data_dir.is_dir(), f"Stereo image directory not found: {data_dir}"
+    logger.info("Project root : %s", root)
+    logger.info("Stereo dir   : %s", data_dir)
+    logger.info("Output dir   : %s", output_dir)
+
+    # 1. Load stereo pair
+    left_gray, right_gray = load_stereo_pair(left_path, right_path)
+
+    logger.info("Subtask 1 complete.")
 
 
 if __name__ == "__main__":
