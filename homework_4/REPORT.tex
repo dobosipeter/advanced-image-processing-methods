@@ -29,7 +29,7 @@ Estimate a relative depth (disparity) map from an uncalibrated stereo image pair
 
     \item \textbf{Rectification}: \texttt{cv2.stereoRectifyUncalibrated} computes homographies $H_L, H_R$ that align epipolar lines horizontally. Both images are warped with \texttt{cv2.warpPerspective}. Black border regions from uncalibrated rectification are expected and handled by SGBM.
 
-    \item \textbf{Disparity (SGBM)}: Computed with \texttt{cv2.StereoSGBM\_create} (parameters in Table~\ref{tab:sgbm}). The raw \texttt{int16} output (scaled by 16) is normalised to $[0,255]$ \texttt{uint8}.
+    \item \textbf{Disparity (SGBM)}: A bilateral filter is applied to the rectified pair before matching to reduce noise in low-texture regions. The disparity is then computed with \texttt{cv2.StereoSGBM\_create} (parameters in Table~\ref{tab:sgbm}). Invalid disparities ($<0$) are zeroed, and the result is normalised to $[0,255]$ \texttt{uint8}.
 
     \item \textbf{Visualisation}: A $1\times3$ Matplotlib figure shows the rectified pair and the colormapped disparity map (brighter $\approx$ closer).
 \end{enumerate}
@@ -40,17 +40,18 @@ Estimate a relative depth (disparity) map from an uncalibrated stereo image pair
     \textbf{Parameter} & \textbf{Value} & \textbf{Reasoning} \\
     \hline
     \texttt{minDisparity}      & $0$    & Standard left-as-reference. \\
-    \texttt{numDisparities}    & $128$  & Wide depth range; divisible by 16. \\
-    \texttt{blockSize}         & $5$    & Sharp depth edges; smoothness term compensates. \\
-    \texttt{P1}                & $200$  & $8 \cdot 1 \cdot 5^2$; small disparity change penalty. \\
-    \texttt{P2}                & $800$  & $32 \cdot 1 \cdot 5^2$; larger discontinuity penalty. \\
+    \texttt{numDisparities}    & $160$  & Wide depth range; divisible by 16. \\
+    \texttt{blockSize}         & $11$   & Balances detail and smoothness for this scene. \\
+    \texttt{P1}                & $968$  & $8 \cdot 1 \cdot 11^2$; small disparity change penalty. \\
+    \texttt{P2}                & $3872$ & $32 \cdot 1 \cdot 11^2$; larger discontinuity penalty. \\
     \texttt{disp12MaxDiff}     & $1$    & Left/right consistency check. \\
-    \texttt{uniquenessRatio}   & $10$   & Reject ambiguous matches ($\geq$10\%). \\
-    \texttt{speckleWindowSize} & $100$  & Speckle noise filter window. \\
-    \texttt{speckleRange}      & $32$   & Max variation inside a speckle. \\
-    \texttt{mode}              & \texttt{SGBM\_3WAY} & Quality/runtime trade-off. \\
+    \texttt{uniquenessRatio}   & $5$    & Relaxed; improves coverage on low-texture areas. \\
+    \texttt{speckleWindowSize} & $200$  & Aggressive speckle noise filtering. \\
+    \texttt{speckleRange}      & $2$    & Tight variation limit inside a speckle. \\
+    \texttt{preFilterCap}      & $63$   & Normalises pixel intensities before matching. \\
+    \texttt{mode}              & \texttt{SGBM\_HH} & Full 8-direction dynamic programming. \\
 \end{tabular}
-\caption{SGBM parameters. $P_1, P_2$ follow the recommended $8cb^2$/$32cb^2$ scaling ($c{=}1$ channel, $b{=}5$ block size).}
+\caption{SGBM parameters. $P_1, P_2$ follow the recommended $8cb^2$/$32cb^2$ scaling ($c{=}1$ channel, $b{=}11$ block size).}
 \label{tab:sgbm}
 \end{table}
 

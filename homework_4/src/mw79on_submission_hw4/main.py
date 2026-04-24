@@ -166,7 +166,37 @@ def compute_disparity_sgbm(
     rectified_right: np.ndarray,
 ) -> np.ndarray:
     """Compute the disparity map with SGBM and return it as ``uint8`` in [0, 255]."""
-    raise NotImplementedError
+    filtered_left = cv2.bilateralFilter(rectified_left, 9, 75, 75)
+    filtered_right = cv2.bilateralFilter(rectified_right, 9, 75, 75)
+
+    block_size = 11
+    sgbm = cv2.StereoSGBM_create(
+        minDisparity=0,
+        numDisparities=160,
+        blockSize=block_size,
+        P1=8 * 1 * block_size ** 2,
+        P2=32 * 1 * block_size ** 2,
+        disp12MaxDiff=1,
+        uniquenessRatio=5,
+        speckleWindowSize=200,
+        speckleRange=2,
+        preFilterCap=63,
+        mode=cv2.STEREO_SGBM_MODE_HH,
+    )
+
+    disparity_raw = sgbm.compute(filtered_left, filtered_right)
+    disparity_valid = disparity_raw.copy()
+    disparity_valid[disparity_raw < 0] = 0
+    disparity_norm = cv2.normalize(
+        disparity_valid, None,
+        alpha=0, beta=255,
+        norm_type=cv2.NORM_MINMAX,
+    )
+    disparity_uint8 = np.uint8(disparity_norm)
+    logger.info("Disparity map computed — range [%d, %d], %.1f%% valid pixels",
+                disparity_raw.min(), disparity_raw.max(),
+                100 * (disparity_raw >= 0).sum() / disparity_raw.size)
+    return disparity_uint8
 
 
 # 6. Visualisation
@@ -223,6 +253,11 @@ def main() -> None:
     cv2.imwrite(str(output_dir / "rectified_left.png"), rect_left)
     cv2.imwrite(str(output_dir / "rectified_right.png"), rect_right)
     logger.info("Subtask 4 complete — rectified images saved to output/.")
+
+    # 5. Disparity computation
+    disparity = compute_disparity_sgbm(rect_left, rect_right)
+    cv2.imwrite(str(output_dir / "disparity.png"), disparity)
+    logger.info("Subtask 5 complete — disparity map saved to output/.")
 
 
 if __name__ == "__main__":
