@@ -15,6 +15,7 @@ import logging
 from pathlib import Path
 
 import cv2
+import matplotlib.pyplot as plt
 import numpy as np
 
 logging.basicConfig(
@@ -207,7 +208,24 @@ def save_results_figure(
     output_path: Path,
 ) -> None:
     """Save a 1×3 figure: rectified left, rectified right, disparity (colormap)."""
-    raise NotImplementedError
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+
+    axes[0].imshow(rectified_left, cmap="gray")
+    axes[0].set_title("Rectified Left")
+    axes[0].axis("off")
+
+    axes[1].imshow(rectified_right, cmap="gray")
+    axes[1].set_title("Rectified Right")
+    axes[1].axis("off")
+
+    im = axes[2].imshow(disparity, cmap="magma")
+    axes[2].set_title("Disparity (brighter ≈ closer)")
+    axes[2].axis("off")
+    fig.colorbar(im, ax=axes[2], fraction=0.046, pad=0.04)
+
+    fig.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    logger.info("Results figure saved to %s", output_path)
 
 
 # Pipeline
@@ -258,6 +276,13 @@ def main() -> None:
     disparity = compute_disparity_sgbm(rect_left, rect_right)
     cv2.imwrite(str(output_dir / "disparity.png"), disparity)
     logger.info("Subtask 5 complete — disparity map saved to output/.")
+
+    # 6. Visualisation
+    save_results_figure(
+        rect_left, rect_right, disparity,
+        output_dir / "disparity_results.png",
+    )
+    logger.info("Subtask 6 complete — all done.")
 
 
 if __name__ == "__main__":
