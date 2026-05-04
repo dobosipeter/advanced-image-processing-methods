@@ -10,8 +10,8 @@ This folder contains the solution for Homework 2 (noise-aware preprocessing, key
 - `src/mw79on_submission_hw2/main.py`: Complete pipeline implementation.
 - `output/final_localization.png`: Final image with ROI bounding rectangles.
 - `output/matches/`: Per-ROI matching visualizations.
-- `RESULTS.md`: Work-in-progress tracker and notes.
-- `REPORT.tex`: Submission report template.
+- `REPORT.tex`: LaTeX source for the submission report.
+- `REPORT.pdf`: Compiled submission report.
 
 ## Requirements
 

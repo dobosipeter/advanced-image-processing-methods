@@ -31,6 +31,16 @@ This [repository](https://github.com/dobosipeter/advanced-image-processing-metho
 - `homework_3/data/dobosi_peter_laszlo_norm_dist/`: Noisy image variants (Gaussian noise).
 - `homework_3/output/`: Generated figures and results.
 
+### Homework 4 — Stereo Disparity Map (Uncalibrated)
+
+- `homework_4/src/mw79on_submission_hw4/main.py`: Main solution script.
+- `homework_4/data/description.pdf`: Official assignment description.
+- `homework_4/data/dobosi_peter_laszlo/`: Assigned stereo pair (`im0.png`, `im1.png`).
+- `homework_4/README.md`: Run instructions and notes.
+- `homework_4/REPORT.tex`: LaTeX source for the submission report.
+- `homework_4/REPORT.pdf`: Compiled submission report.
+- `homework_4/output/disparity_results.png`: Final 1×3 figure (rectified pair + disparity map).
+
 ## Quick Start
 
 For setup and execution:
@@ -38,6 +48,7 @@ For setup and execution:
 - Homework 1: `homework_1/README.md`
 - Homework 2: `homework_2/README.md`
 - Homework 3: `homework_3/README.md`
+- Homework 4: `homework_4/README.md`
 
 ## Python Environment
 
@@ -50,6 +61,7 @@ python -m pip install --upgrade pip
 pip install -e homework_1
 pip install -e homework_2
 pip install -e homework_3
+pip install -e homework_4
 ```
 
 This keeps dependencies for all assignments in a single reproducible environment.
@@ -62,3 +74,4 @@ In this repository, implementations are kept explicit and Python OpenCV compatib
 - Homework 1: histogram-based enhancement with Python OpenCV color conversions.
 - Homework 2: ORB binary descriptors with BFMatcher (Hamming), Lowe-ratio filtering, and MAD-based outlier rejection for robust localization.
 - Homework 3: Gaussian denoising, WebP compression, and quality metrics (MSE, PSNR, SSIM).
+- Homework 4: SIFT + FLANN matching, RANSAC fundamental-matrix estimation, uncalibrated rectification, and SGBM disparity computation.
