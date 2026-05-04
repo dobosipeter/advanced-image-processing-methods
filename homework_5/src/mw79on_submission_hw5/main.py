@@ -1,14 +1,19 @@
-"""Transfer-learning image classification pipeline (PyTorch).
+"""Transfer-learning image classification on DTD with MaxViT-T (PyTorch).
+
+Backbone: ``torchvision.models.maxvit_t`` initialised with the
+``IMAGENET1K_V1`` weights (Google Research, ECCV 2022 — multi-axis attention).
+Dataset: ``torchvision.datasets.DTD`` (Describable Textures Dataset, 47
+texture categories, 5 640 images, official ``partition=1`` split).
 
 Pipeline:
 
-1. Data preparation & augmentation: load a torchvision dataset, build
-   train/val/test splits, apply at least three online augmentations to the
-   training split, resize and ImageNet-normalise all splits, and wrap them
-   in DataLoaders.
-2. Transfer learning & model setup: load a pretrained backbone from
-   ``torchvision.models``, replace its classifier head to match the target
-   number of classes, and enable gradients on every layer for fine-tuning.
+1. Data preparation & augmentation: download/load the DTD train/val/test
+   partition, apply at least three online augmentations to the training
+   split, resize all splits to 224×224 and ImageNet-normalise, and wrap
+   them in ``DataLoader``s.
+2. Transfer learning & model setup: load pretrained MaxViT-T, replace its
+   classifier head to output 47 logits, and enable gradients on every
+   layer for full fine-tuning.
 3. Training loop: pick a loss and optimiser, run ``forward``/``backward``/
    ``step`` per batch, evaluate on the validation split each epoch with
    ``model.eval()`` and ``torch.no_grad()``, and apply early stopping that
@@ -39,28 +44,33 @@ def get_project_root() -> Path:
 
 # 1. Data preparation & augmentation
 def build_dataloaders(
-    data_dir: Path,
+    data_root: Path,
     batch_size: int,
     num_workers: int,
-    val_fraction: float,
     image_size: int,
-    seed: int,
 ) -> tuple[DataLoader, DataLoader, DataLoader, list[str]]:
-    """Build train/val/test ``DataLoader``s and return the class label list.
+    """Build train/val/test ``DataLoader``s for DTD.
 
-    Augmentations are applied to the training split only; the validation
-    and test splits use resize + ImageNet normalisation only.
+    DTD ships with 10 official train/val/test partitions; this pipeline uses
+    ``partition=1``. The training transform stacks ``RandomHorizontalFlip``,
+    ``RandomRotation`` and ``ColorJitter`` on top of the standard resize +
+    ImageNet normalisation; validation and test transforms perform only
+    resize + normalisation (no augmentation).
 
     Returns:
-        ``(train_loader, val_loader, test_loader, class_names)``.
+        ``(train_loader, val_loader, test_loader, class_names)`` where
+        ``class_names`` is a 47-element list aligned with DTD's class indices.
     """
     raise NotImplementedError
 
 
 # 2. Transfer learning & model setup
 def build_model(num_classes: int, device: torch.device) -> nn.Module:
-    """Load a pretrained backbone, swap its classifier, and move to *device*.
+    """Build a MaxViT-T backbone with a fresh ``num_classes``-way classifier.
 
+    Loads ``torchvision.models.maxvit_t`` with the ``IMAGENET1K_V1`` weights,
+    replaces the final ``nn.Linear`` in the classifier head to output
+    ``num_classes`` logits (47 for DTD), and moves the model to *device*.
     All parameters are left trainable so the entire network is fine-tuned.
     """
     raise NotImplementedError
@@ -134,7 +144,7 @@ def plot_confusion_matrix(
     class_names: list[str],
     output_path: Path,
 ) -> None:
-    """Save a labelled confusion matrix figure for the test predictions."""
+    """Save a labelled 47×47 confusion matrix figure for the test predictions."""
     raise NotImplementedError
 
 
