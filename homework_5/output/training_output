@@ -1,0 +1,34 @@
+2026-05-07 21:10:20,932 - __main__ - INFO - Project root : /kaggle/working/advanced-image-processing-methods/homework_5
+2026-05-07 21:10:20,933 - __main__ - INFO - Data root    : /kaggle/working/advanced-image-processing-methods/homework_5/data
+2026-05-07 21:10:20,933 - __main__ - INFO - Output dir   : /kaggle/working/advanced-image-processing-methods/homework_5/output
+2026-05-07 21:10:20,933 - __main__ - INFO - Runtime config — device=cuda batch_size=32 num_workers=2 pin_memory=True image_size=224 epochs=30 patience=5 lr=1.0e-04 wd=1.0e-04
+100%|████████████████████████████████████████| 625M/625M [00:17<00:00, 36.4MB/s]
+2026-05-07 21:10:45,279 - __main__ - INFO - DTD partition=1 — train: 1880  val: 1880  test: 1880  classes: 47
+2026-05-07 21:10:45,279 - __main__ - INFO - Subtask 1 complete.
+Downloading: "https://download.pytorch.org/models/maxvit_t-bc5ab103.pth" to /root/.cache/torch/hub/checkpoints/maxvit_t-bc5ab103.pth
+100%|█████████████████████████████████████████| 119M/119M [00:00<00:00, 185MB/s]
+2026-05-07 21:10:47,120 - __main__ - INFO - MaxViT-T loaded — total params: 30.43M, trainable: 30.43M (head -> 47 classes)
+2026-05-07 21:10:47,122 - __main__ - INFO - Subtask 2 complete.
+2026-05-07 21:11:39,345 - __main__ - INFO - epoch 1/30 — train_loss=3.6232 train_acc=0.1745  val_loss=3.3123 val_acc=0.3910  best_val_loss=3.3123  patience=0/5 (new best, saved)
+2026-05-07 21:12:33,013 - __main__ - INFO - epoch 2/30 — train_loss=2.7745 train_acc=0.5553  val_loss=2.4468 val_acc=0.5559  best_val_loss=2.4468  patience=0/5 (new best, saved)
+2026-05-07 21:13:30,609 - __main__ - INFO - epoch 3/30 — train_loss=1.9240 train_acc=0.6686  val_loss=1.7658 val_acc=0.6367  best_val_loss=1.7658  patience=0/5 (new best, saved)
+2026-05-07 21:14:26,975 - __main__ - INFO - epoch 4/30 — train_loss=1.3660 train_acc=0.7362  val_loss=1.4069 val_acc=0.6734  best_val_loss=1.4069  patience=0/5 (new best, saved)
+2026-05-07 21:15:23,668 - __main__ - INFO - epoch 5/30 — train_loss=0.9906 train_acc=0.8122  val_loss=1.2109 val_acc=0.6899  best_val_loss=1.2109  patience=0/5 (new best, saved)
+2026-05-07 21:16:20,547 - __main__ - INFO - epoch 6/30 — train_loss=0.7172 train_acc=0.8644  val_loss=1.1311 val_acc=0.6926  best_val_loss=1.1311  patience=0/5 (new best, saved)
+2026-05-07 21:17:17,378 - __main__ - INFO - epoch 7/30 — train_loss=0.5498 train_acc=0.8931  val_loss=1.0798 val_acc=0.7080  best_val_loss=1.0798  patience=0/5 (new best, saved)
+2026-05-07 21:18:13,866 - __main__ - INFO - epoch 8/30 — train_loss=0.4014 train_acc=0.9324  val_loss=1.0525 val_acc=0.7122  best_val_loss=1.0525  patience=0/5 (new best, saved)
+2026-05-07 21:19:10,685 - __main__ - INFO - epoch 9/30 — train_loss=0.3097 train_acc=0.9511  val_loss=1.0349 val_acc=0.7234  best_val_loss=1.0349  patience=0/5 (new best, saved)
+2026-05-07 21:20:06,951 - __main__ - INFO - epoch 10/30 — train_loss=0.2481 train_acc=0.9622  val_loss=1.0388 val_acc=0.7165  best_val_loss=1.0349  patience=1/5
+2026-05-07 21:21:03,493 - __main__ - INFO - epoch 11/30 — train_loss=0.1909 train_acc=0.9729  val_loss=1.0807 val_acc=0.7165  best_val_loss=1.0349  patience=2/5
+2026-05-07 21:22:00,042 - __main__ - INFO - epoch 12/30 — train_loss=0.1554 train_acc=0.9750  val_loss=1.0922 val_acc=0.7191  best_val_loss=1.0349  patience=3/5
+2026-05-07 21:22:56,314 - __main__ - INFO - epoch 13/30 — train_loss=0.1240 train_acc=0.9824  val_loss=1.1759 val_acc=0.7059  best_val_loss=1.0349  patience=4/5
+2026-05-07 21:23:52,574 - __main__ - INFO - epoch 14/30 — train_loss=0.1138 train_acc=0.9777  val_loss=1.1062 val_acc=0.7160  best_val_loss=1.0349  patience=5/5
+2026-05-07 21:23:52,574 - __main__ - INFO - Early stopping at epoch 14 (no val_loss improvement for 5 epochs).
+2026-05-07 21:23:52,814 - __main__ - INFO - Reloaded best checkpoint from /kaggle/working/advanced-image-processing-methods/homework_5/output/best_model.pt
+2026-05-07 21:23:52,814 - __main__ - INFO - Subtask 3 complete — best checkpoint saved to /kaggle/working/advanced-image-processing-methods/homework_5/output/best_model.pt.
+2026-05-07 21:24:06,818 - __main__ - INFO - Test metrics — loss=1.0189 accuracy=0.7271
+2026-05-07 21:24:21,686 - __main__ - INFO - Training curves saved to /kaggle/working/advanced-image-processing-methods/homework_5/output/training_curves.png
+2026-05-07 21:24:23,493 - __main__ - INFO - Confusion matrix saved to /kaggle/working/advanced-image-processing-methods/homework_5/output/confusion_matrix.png
+2026-05-07 21:24:23,493 - __main__ - INFO - Subtask 4 complete.
+2026-05-07 21:24:23,493 - __main__ - INFO - Homework 5 pipeline complete — test_loss=1.0189 test_accuracy=0.7271
+
