@@ -46,6 +46,11 @@ This [repository](https://github.com/dobosipeter/advanced-image-processing-metho
 - `homework_5/src/mw79on_submission_hw5/main.py`: Main solution script (MaxViT-T + DTD).
 - `homework_5/data/description.pdf`: Official assignment description.
 - `homework_5/README.md`: Run instructions, model/dataset choice rationale, and notes.
+- `homework_5/REPORT.tex`: LaTeX source for the submission report.
+- `homework_5/REPORT.pdf`: Compiled submission report.
+- `homework_5/output/training_curves.png`: Training and validation loss/accuracy curves.
+- `homework_5/output/confusion_matrix.png`: Test-set confusion matrix.
+- `homework_5/output/training_output`: Kaggle training log with final metrics.
 
 ## Quick Start
 
