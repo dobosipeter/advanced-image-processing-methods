@@ -52,6 +52,19 @@ This [repository](https://github.com/dobosipeter/advanced-image-processing-metho
 - `homework_5/output/confusion_matrix.png`: Test-set confusion matrix.
 - `homework_5/output/training_output`: Kaggle training log with final metrics.
 
+### Homework 6 — YOLO26 Object Detection Comparison
+
+- `homework_6/src/mw79on_submission_hw6/main.py`: Main solution script (predict + val pipeline across YOLO26 sizes).
+- `homework_6/data/description.pdf`: Official assignment description.
+- `homework_6/README.md`: Run instructions, environment notes, and dataset/weights extraction steps.
+- `homework_6/REPORT.tex`: LaTeX source for the submission report.
+- `homework_6/REPORT.pdf`: Compiled submission report (2 pages).
+- `homework_6/output/montages/yolo26{n,s,m,l,x}.png`: 4×4 prediction montages, one per model size, on a fixed seeded test sample.
+- `homework_6/output/predictions/yolo26{n,s,m,l,x}/`: per-image annotated PNGs backing the montages.
+- `homework_6/output/val_runs/yolo26{n,s,m,l,x}/`: Ultralytics' validation artefacts (P/R/F1/PR curves and confusion matrix per model).
+- `homework_6/output/metrics.csv` / `output/metrics.md`: comparison table (mAP@0.5, mAP@0.75, mAP@0.5:0.95, runtime).
+- `homework_6/output/run_log.txt`: captured stdout from the full pipeline run.
+
 ## Quick Start
 
 For setup and execution:
@@ -61,6 +74,7 @@ For setup and execution:
 - Homework 3: `homework_3/README.md`
 - Homework 4: `homework_4/README.md`
 - Homework 5: `homework_5/README.md`
+- Homework 6: `homework_6/README.md`
 
 ## Python Environment
 
@@ -75,16 +89,18 @@ pip install -e homework_2
 pip install -e homework_3
 pip install -e homework_4
 pip install -e homework_5
+pip install -e homework_6
 ```
 
 This keeps dependencies for all assignments in a single reproducible environment.
 
 ## Note on Method Documentation Consistency
 
-Homeworks 1–4 are Python OpenCV based; some classroom examples and references mix API variants or detector/matcher combinations across OpenCV ecosystems, so implementations here are kept explicit and Python OpenCV compatible. Homework 5 switches stacks to PyTorch + torchvision for deep-learning transfer learning.
+Homeworks 1–4 are Python OpenCV based; some classroom examples and references mix API variants or detector/matcher combinations across OpenCV ecosystems, so implementations here are kept explicit and Python OpenCV compatible. Homework 5 switches stacks to PyTorch + torchvision for deep-learning transfer learning. Homework 6 uses the Ultralytics YOLO API on top of PyTorch.
 
 - Homework 1: histogram-based enhancement with Python OpenCV color conversions.
 - Homework 2: ORB binary descriptors with BFMatcher (Hamming), Lowe-ratio filtering, and MAD-based outlier rejection for robust localization.
 - Homework 3: Gaussian denoising, WebP compression, and quality metrics (MSE, PSNR, SSIM).
 - Homework 4: SIFT + FLANN matching, RANSAC fundamental-matrix estimation, uncalibrated rectification, and SGBM disparity computation.
 - Homework 5: PyTorch transfer learning — MaxViT-T (Google, ECCV 2022) fine-tuned on the Describable Textures Dataset (DTD, 47 classes) with ImageNet-pretrained weights.
+- Homework 6: Ultralytics YOLO26 inference + validation across the five pretrained sizes (n/s/m/l/x) on the African Wildlife dataset; pretrained weights only, no training.
