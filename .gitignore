@@ -204,6 +204,11 @@ homework_5/output/best_model.pt
 .cursorignore
 .cursorindexingignore
 
+# Homework 6 — extracted dataset, extracted YOLO26 weights, raw zips
+homework_6/data/african-wildlife/
+homework_6/data/weights/
+homework_6/*.zip
+
 # Marimo
 marimo/_static/
 marimo/_lsp/
