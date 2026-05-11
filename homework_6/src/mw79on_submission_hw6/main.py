@@ -203,7 +203,7 @@ def run_val(
         project=str(project_dir),
         name=run_name,
         exist_ok=True,
-        plots=False,
+        plots=True,
         verbose=False,
     )
     runtime_s = time.perf_counter() - t0
